@@ -25,6 +25,9 @@ export default function DashboardPage() {
     approvedDeposits: 0,
     totalDepositedAmount: 0,
     totalSystemBalance: 0,
+    pendingWithdrawals: 0,
+    paidWithdrawals: 0,
+    totalWithdrawnAmount: 0,
   });
 
   const [pendingDeposits, setPendingDeposits] = useState<DepositRequest[]>([]);
@@ -63,9 +66,14 @@ export default function DashboardPage() {
   }, [loadData]);
 
   // Hook real-time WebSocket for live reload
-  useAdminSocket(() => {
-    loadData();
-  });
+  useAdminSocket(
+    () => {
+      loadData();
+    },
+    () => {
+      loadData();
+    }
+  );
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -77,7 +85,7 @@ export default function DashboardPage() {
             <Sparkles className="w-5 h-5 text-amber-400" />
           </h2>
           <p className="text-xs text-gray-400 mt-1">
-            Real-time deposit approvals, player balances, and high-frequency transaction stream
+            Real-time deposit approvals, client withdrawals queue, and high-frequency ledger stream
           </p>
         </div>
 
@@ -90,14 +98,24 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <MetricCard
-          title="Pending Approvals"
+          title="Pending Deposits"
           value={stats.pendingDeposits}
           subtitle={stats.pendingDeposits > 0 ? 'Action required in queue' : 'All deposits cleared'}
           icon={Clock}
           variant="amber"
           highlight={stats.pendingDeposits > 0}
+        />
+        <MetricCard
+          title="Pending Withdrawals"
+          value={stats.pendingWithdrawals || 0}
+          subtitle={
+            (stats.pendingWithdrawals || 0) > 0 ? 'Payout queue awaiting action' : 'All payouts cleared'
+          }
+          icon={TrendingUp}
+          variant="red"
+          highlight={(stats.pendingWithdrawals || 0) > 0}
         />
         <MetricCard
           title="Approved Deposits"
@@ -116,20 +134,22 @@ export default function DashboardPage() {
           variant="blue"
         />
         <MetricCard
-          title="Registered Players"
-          value={stats.totalUsers}
-          subtitle="Active aviator accounts"
-          icon={Users}
-          variant="purple"
+          title="Paid Withdrawals"
+          value={`LKR ${(stats.totalWithdrawnAmount || 0).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+          })}`}
+          subtitle={`${stats.paidWithdrawals || 0} payouts sent`}
+          icon={Wallet}
+          variant="blue"
         />
         <MetricCard
-          title="Total Player Wallets"
+          title="Circulating Wallets"
           value={`LKR ${(stats.totalSystemBalance || 0).toLocaleString(undefined, {
             minimumFractionDigits: 2,
           })}`}
-          subtitle="Circulating credit balance"
+          subtitle="Active player balance"
           icon={Wallet}
-          variant="amber"
+          variant="purple"
         />
       </div>
 

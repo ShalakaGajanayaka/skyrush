@@ -18,9 +18,15 @@ export function getSocket(): Socket {
   return socket;
 }
 
-export function useAdminSocket(onNewDeposit?: (deposit: any) => void) {
+export function useAdminSocket(
+  onNewDeposit?: (deposit: any) => void,
+  onNewWithdrawal?: (withdrawal: any) => void,
+) {
   const onNewDepositRef = useRef(onNewDeposit);
   onNewDepositRef.current = onNewDeposit;
+
+  const onNewWithdrawalRef = useRef(onNewWithdrawal);
+  onNewWithdrawalRef.current = onNewWithdrawal;
 
   useEffect(() => {
     const s = getSocket();
@@ -31,10 +37,18 @@ export function useAdminSocket(onNewDeposit?: (deposit: any) => void) {
       }
     };
 
+    const handleNewWithdrawal = (data: any) => {
+      if (onNewWithdrawalRef.current) {
+        onNewWithdrawalRef.current(data?.withdrawal || data);
+      }
+    };
+
     s.on('newDepositSubmitted', handleNewDeposit);
+    s.on('newWithdrawalSubmitted', handleNewWithdrawal);
 
     return () => {
       s.off('newDepositSubmitted', handleNewDeposit);
+      s.off('newWithdrawalSubmitted', handleNewWithdrawal);
     };
   }, []);
 }

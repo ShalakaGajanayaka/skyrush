@@ -9,6 +9,7 @@ import { fetchStats } from '@/lib/api';
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const [pendingCount, setPendingCount] = useState(0);
+  const [pendingWithdrawalCount, setPendingWithdrawalCount] = useState(0);
   const [isManualCreditOpen, setIsManualCreditOpen] = useState(false);
   const [prefillUser, setPrefillUser] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -49,6 +50,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     try {
       const stats = await fetchStats();
       setPendingCount(stats.pendingDeposits || 0);
+      setPendingWithdrawalCount(stats.pendingWithdrawals || 0);
     } catch {}
   }, []);
 
@@ -58,14 +60,23 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     return () => clearInterval(interval);
   }, [loadPendingCount]);
 
-  // Hook real-time WebSocket for new deposit submissions
-  useAdminSocket((deposit) => {
-    playNotificationChime();
-    setPendingCount((prev) => prev + 1);
-    showToast(
-      `⚡ New Deposit Submitted: ${deposit.username} - ${deposit.currency} ${deposit.amount} (${deposit.paymentMethod.toUpperCase()})`
-    );
-  });
+  // Hook real-time WebSocket for new deposits and withdrawals
+  useAdminSocket(
+    (deposit) => {
+      playNotificationChime();
+      setPendingCount((prev) => prev + 1);
+      showToast(
+        `⚡ New Deposit Submitted: ${deposit.username} - ${deposit.currency} ${deposit.amount} (${deposit.paymentMethod?.toUpperCase() || 'MANUAL'})`
+      );
+    },
+    (withdrawal) => {
+      playNotificationChime();
+      setPendingWithdrawalCount((prev) => prev + 1);
+      showToast(
+        `💸 New Withdrawal Requested: ${withdrawal.username} - ${withdrawal.currency} ${withdrawal.amount} (${withdrawal.method?.toUpperCase() || 'PAYOUT'})`
+      );
+    }
+  );
 
   const handleOpenCredit = (username?: string) => {
     setPrefillUser(username || '');
@@ -80,6 +91,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       {/* Main Sidebar */}
       <Sidebar
         pendingCount={pendingCount}
+        pendingWithdrawalCount={pendingWithdrawalCount}
         onOpenManualCredit={() => handleOpenCredit()}
       />
 

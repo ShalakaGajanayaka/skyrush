@@ -12,14 +12,16 @@ import {
   Plane,
   PlusCircle,
   Radio,
+  ArrowUpRight,
 } from 'lucide-react';
 
 interface SidebarProps {
   pendingCount?: number;
+  pendingWithdrawalCount?: number;
   onOpenManualCredit?: () => void;
 }
 
-export default function Sidebar({ pendingCount = 0, onOpenManualCredit }: SidebarProps) {
+export default function Sidebar({ pendingCount = 0, pendingWithdrawalCount = 0, onOpenManualCredit }: SidebarProps) {
   const pathname = usePathname();
 
   const navItems = [
@@ -33,6 +35,12 @@ export default function Sidebar({ pendingCount = 0, onOpenManualCredit }: Sideba
       href: '/deposits/pending',
       icon: Clock,
       badge: pendingCount > 0 ? pendingCount : undefined,
+    },
+    {
+      label: 'Withdrawals Queue',
+      href: '/withdrawals',
+      icon: ArrowUpRight,
+      badge: pendingWithdrawalCount > 0 ? pendingWithdrawalCount : undefined,
     },
     {
       label: 'Deposit History',

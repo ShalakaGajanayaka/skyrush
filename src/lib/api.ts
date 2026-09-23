@@ -1,4 +1,4 @@
-import { DashboardStats, DepositRequest, User, PaymentChannel } from './types';
+import { DashboardStats, DepositRequest, WithdrawalRequest, User, PaymentChannel } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -16,6 +16,38 @@ export async function fetchDeposits(status?: string, limit: number = 100): Promi
   const res = await fetch(`${API_BASE}/admin/api/deposits?${query.toString()}`, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to fetch deposits');
   return res.json();
+}
+
+export async function fetchWithdrawals(status?: string, limit: number = 100): Promise<WithdrawalRequest[]> {
+  const query = new URLSearchParams();
+  if (status && status !== 'ALL') query.set('status', status);
+  query.set('limit', limit.toString());
+
+  const res = await fetch(`${API_BASE}/admin/api/withdrawals?${query.toString()}`, { cache: 'no-store' });
+  if (!res.ok) throw new Error('Failed to fetch withdrawals');
+  return res.json();
+}
+
+export async function approveWithdrawal(id: string, adminNote?: string, adminUser: string = 'Next.js Admin'): Promise<any> {
+  const res = await fetch(`${API_BASE}/admin/api/withdrawals/${id}/approve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ adminNote, adminUser }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Failed to approve withdrawal');
+  return data;
+}
+
+export async function rejectWithdrawal(id: string, reason?: string, adminUser: string = 'Next.js Admin'): Promise<any> {
+  const res = await fetch(`${API_BASE}/admin/api/withdrawals/${id}/reject`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason, adminUser }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Failed to reject withdrawal');
+  return data;
 }
 
 export async function approveDeposit(id: string, adminUser: string = 'Next.js Admin'): Promise<any> {

@@ -1,4 +1,5 @@
 export type DepositStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type WithdrawalStatus = 'PENDING' | 'PAID' | 'REJECTED';
 
 export interface DepositRequest {
   id: string;
@@ -13,6 +14,23 @@ export interface DepositRequest {
   adminNote?: string;
   approvedBy?: string;
   approvedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WithdrawalRequest {
+  id: string;
+  userId: string;
+  username: string;
+  email?: string;
+  amount: number | string;
+  currency: string;
+  method: string;
+  payoutDetails: string;
+  status: WithdrawalStatus;
+  adminNote?: string;
+  processedBy?: string;
+  processedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -34,6 +52,9 @@ export interface DashboardStats {
   pendingDeposits: number;
   approvedDeposits: number;
   totalDepositedAmount: number;
+  pendingWithdrawals: number;
+  paidWithdrawals: number;
+  totalWithdrawnAmount: number;
   totalSystemBalance: number;
 }
 
