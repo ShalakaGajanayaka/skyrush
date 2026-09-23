@@ -1,0 +1,123 @@
+'use client';
+
+import React, { useState, useEffect, useCallback } from 'react';
+import Sidebar from './Sidebar';
+import Header from './Header';
+import ManualCreditModal from './ManualCreditModal';
+import { useAdminSocket } from '@/lib/socket';
+import { fetchStats } from '@/lib/api';
+
+export default function AdminShell({ children }: { children: React.ReactNode }) {
+  const [pendingCount, setPendingCount] = useState(0);
+  const [isManualCreditOpen, setIsManualCreditOpen] = useState(false);
+  const [prefillUser, setPrefillUser] = useState('');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isToastError, setIsToastError] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  const showToast = useCallback((msg: string, isError: boolean = false) => {
+    setToastMessage(msg);
+    setIsToastError(isError);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 4500);
+  }, []);
+
+  const playNotificationChime = useCallback(() => {
+    if (!soundEnabled) return;
+    try {
+      // Audio chime synthesis using Web Audio API
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioContext) {
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.4);
+      }
+    } catch {}
+  }, [soundEnabled]);
+
+  const loadPendingCount = useCallback(async () => {
+    try {
+      const stats = await fetchStats();
+      setPendingCount(stats.pendingDeposits || 0);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    loadPendingCount();
+    const interval = setInterval(loadPendingCount, 15000);
+    return () => clearInterval(interval);
+  }, [loadPendingCount]);
+
+  // Hook real-time WebSocket for new deposit submissions
+  useAdminSocket((deposit) => {
+    playNotificationChime();
+    setPendingCount((prev) => prev + 1);
+    showToast(
+      `⚡ New Deposit Submitted: ${deposit.username} - ${deposit.currency} ${deposit.amount} (${deposit.paymentMethod.toUpperCase()})`
+    );
+  });
+
+  const handleOpenCredit = (username?: string) => {
+    setPrefillUser(username || '');
+    setIsManualCreditOpen(true);
+  };
+
+  return (
+    <div className="flex min-h-screen bg-[#080c14] text-gray-100 font-sans antialiased selection:bg-blue-500 selection:text-white">
+      {/* Background radial glow effects */}
+      <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(circle_at_15%_15%,rgba(59,130,246,0.06)_0%,transparent_40%),radial-gradient(circle_at_85%_85%,rgba(139,92,246,0.06)_0%,transparent_40%)]" />
+
+      {/* Main Sidebar */}
+      <Sidebar
+        pendingCount={pendingCount}
+        onOpenManualCredit={() => handleOpenCredit()}
+      />
+
+      {/* Main Body Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <Header
+          soundEnabled={soundEnabled}
+          onToggleSound={() => setSoundEnabled((prev) => !prev)}
+        />
+
+        <main className="flex-1 p-8 overflow-y-auto">
+          {children}
+        </main>
+      </div>
+
+      {/* Direct Credit Modal */}
+      <ManualCreditModal
+        isOpen={isManualCreditOpen}
+        onClose={() => setIsManualCreditOpen(false)}
+        prefillUsername={prefillUser}
+        onCreditSuccess={(user, amount) => {
+          showToast(`✅ Successfully credited ${amount} to ${user?.username || prefillUser}!`);
+          loadPendingCount();
+        }}
+      />
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div
+          className={`fixed bottom-6 right-6 z-50 px-5 py-3.5 rounded-xl shadow-2xl font-semibold text-xs flex items-center gap-3 backdrop-blur-xl border animate-slide-up ${
+            isToastError
+              ? 'bg-red-600/90 border-red-500/40 text-white'
+              : 'bg-emerald-600/90 border-emerald-500/40 text-white'
+          }`}
+        >
+          <span>{toastMessage}</span>
+        </div>
+      )}
+    </div>
+  );
+}
