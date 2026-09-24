@@ -2,8 +2,25 @@ import { DashboardStats, DepositRequest, WithdrawalRequest, User, PaymentChannel
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
+function getAuthHeaders(): HeadersInit {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('admin_token');
+    if (token) {
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
+    }
+  }
+  return { 'Content-Type': 'application/json' };
+}
+
 export async function fetchStats(): Promise<DashboardStats> {
-  const res = await fetch(`${API_BASE}/admin/api/stats`, { cache: 'no-store' });
+  const res = await fetch(`${API_BASE}/admin/api/stats`, { 
+    cache: 'no-store',
+    headers: getAuthHeaders()
+  });
+  if (res.status === 401) throw new Error('Unauthorized');
   if (!res.ok) throw new Error('Failed to fetch statistics');
   return res.json();
 }
@@ -13,7 +30,11 @@ export async function fetchDeposits(status?: string, limit: number = 100): Promi
   if (status && status !== 'ALL') query.set('status', status);
   query.set('limit', limit.toString());
 
-  const res = await fetch(`${API_BASE}/admin/api/deposits?${query.toString()}`, { cache: 'no-store' });
+  const res = await fetch(`${API_BASE}/admin/api/deposits?${query.toString()}`, { 
+    cache: 'no-store',
+    headers: getAuthHeaders()
+  });
+  if (res.status === 401) throw new Error('Unauthorized');
   if (!res.ok) throw new Error('Failed to fetch deposits');
   return res.json();
 }
@@ -23,7 +44,11 @@ export async function fetchWithdrawals(status?: string, limit: number = 100): Pr
   if (status && status !== 'ALL') query.set('status', status);
   query.set('limit', limit.toString());
 
-  const res = await fetch(`${API_BASE}/admin/api/withdrawals?${query.toString()}`, { cache: 'no-store' });
+  const res = await fetch(`${API_BASE}/admin/api/withdrawals?${query.toString()}`, { 
+    cache: 'no-store',
+    headers: getAuthHeaders()
+  });
+  if (res.status === 401) throw new Error('Unauthorized');
   if (!res.ok) throw new Error('Failed to fetch withdrawals');
   return res.json();
 }
@@ -31,7 +56,7 @@ export async function fetchWithdrawals(status?: string, limit: number = 100): Pr
 export async function approveWithdrawal(id: string, adminNote?: string, adminUser: string = 'Next.js Admin'): Promise<any> {
   const res = await fetch(`${API_BASE}/admin/api/withdrawals/${id}/approve`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders() as Record<string, string>,
     body: JSON.stringify({ adminNote, adminUser }),
   });
   const data = await res.json();
@@ -42,7 +67,7 @@ export async function approveWithdrawal(id: string, adminNote?: string, adminUse
 export async function rejectWithdrawal(id: string, reason?: string, adminUser: string = 'Next.js Admin'): Promise<any> {
   const res = await fetch(`${API_BASE}/admin/api/withdrawals/${id}/reject`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders() as Record<string, string>,
     body: JSON.stringify({ reason, adminUser }),
   });
   const data = await res.json();
@@ -53,7 +78,7 @@ export async function rejectWithdrawal(id: string, reason?: string, adminUser: s
 export async function approveDeposit(id: string, adminUser: string = 'Next.js Admin'): Promise<any> {
   const res = await fetch(`${API_BASE}/admin/api/deposits/${id}/approve`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders() as Record<string, string>,
     body: JSON.stringify({ adminUser }),
   });
   const data = await res.json();
@@ -64,7 +89,7 @@ export async function approveDeposit(id: string, adminUser: string = 'Next.js Ad
 export async function rejectDeposit(id: string, reason?: string, adminUser: string = 'Next.js Admin'): Promise<any> {
   const res = await fetch(`${API_BASE}/admin/api/deposits/${id}/reject`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders() as Record<string, string>,
     body: JSON.stringify({ reason, adminUser }),
   });
   const data = await res.json();
@@ -75,7 +100,7 @@ export async function rejectDeposit(id: string, reason?: string, adminUser: stri
 export async function manualCredit(identifier: string, amount: number, note?: string, adminUser: string = 'Next.js Admin'): Promise<any> {
   const res = await fetch(`${API_BASE}/admin/api/manual-credit`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders() as Record<string, string>,
     body: JSON.stringify({ identifier, amount, note, adminUser }),
   });
   const data = await res.json();
@@ -88,7 +113,11 @@ export async function fetchUsers(search?: string, limit: number = 50): Promise<U
   if (search) query.set('search', search);
   query.set('limit', limit.toString());
 
-  const res = await fetch(`${API_BASE}/admin/api/users?${query.toString()}`, { cache: 'no-store' });
+  const res = await fetch(`${API_BASE}/admin/api/users?${query.toString()}`, { 
+    cache: 'no-store',
+    headers: getAuthHeaders()
+  });
+  if (res.status === 401) throw new Error('Unauthorized');
   if (!res.ok) throw new Error('Failed to fetch users');
   return res.json();
 }

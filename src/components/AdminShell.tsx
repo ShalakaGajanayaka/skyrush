@@ -6,8 +6,10 @@ import Header from './Header';
 import ManualCreditModal from './ManualCreditModal';
 import { useAdminSocket } from '@/lib/socket';
 import { fetchStats } from '@/lib/api';
+import Login from './Login';
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [pendingWithdrawalCount, setPendingWithdrawalCount] = useState(0);
   const [isManualCreditOpen, setIsManualCreditOpen] = useState(false);
@@ -15,6 +17,15 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isToastError, setIsToastError] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('admin_token');
+    if (token) {
+      setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
+    }
+  }, []);
 
   const showToast = useCallback((msg: string, isError: boolean = false) => {
     setToastMessage(msg);
@@ -82,6 +93,14 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     setPrefillUser(username || '');
     setIsManualCreditOpen(true);
   };
+
+  if (isAuthenticated === null) {
+    return <div className="min-h-screen bg-[#080c14] flex items-center justify-center text-white"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div></div>;
+  }
+
+  if (!isAuthenticated) {
+    return <Login onLoginSuccess={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <div className="flex min-h-screen bg-[#080c14] text-gray-100 font-sans antialiased selection:bg-blue-500 selection:text-white">
