@@ -56,6 +56,7 @@ export interface DashboardStats {
   paidWithdrawals: number;
   totalWithdrawnAmount: number;
   totalSystemBalance: number;
+  globalPool?: number;
 }
 
 export interface PaymentChannel {

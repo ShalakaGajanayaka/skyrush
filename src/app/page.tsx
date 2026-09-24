@@ -12,6 +12,7 @@ import {
   Sparkles,
   ArrowRight,
   ShieldAlert,
+  Coins,
 } from 'lucide-react';
 import Link from 'next/link';
 import { fetchStats, fetchDeposits } from '@/lib/api';
@@ -28,6 +29,7 @@ export default function DashboardPage() {
     pendingWithdrawals: 0,
     paidWithdrawals: 0,
     totalWithdrawnAmount: 0,
+    globalPool: 0,
   });
 
   const [pendingDeposits, setPendingDeposits] = useState<DepositRequest[]>([]);
@@ -98,7 +100,17 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4">
+        <MetricCard
+          title="Global Pool"
+          value={`LKR ${(stats.globalPool || 0).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+          })}`}
+          subtitle="Real-time company liability buffer"
+          icon={Coins}
+          variant="amber"
+          highlight={true}
+        />
         <MetricCard
           title="Pending Deposits"
           value={stats.pendingDeposits}
