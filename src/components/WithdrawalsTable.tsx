@@ -80,7 +80,16 @@ export default function WithdrawalsTable({
     }
   };
 
-  const renderPayoutDetails = (details: any, method: string) => {
+  const renderPayoutDetails = (rawDetails: any, method: string) => {
+    let details = rawDetails;
+    if (typeof details === 'string') {
+      try {
+        details = JSON.parse(details);
+      } catch (e) {
+        // ignore
+      }
+    }
+
     if (!details || typeof details !== 'object') {
       return <span className="text-gray-400 italic">No details provided</span>;
     }
