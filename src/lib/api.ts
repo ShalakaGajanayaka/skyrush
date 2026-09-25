@@ -128,3 +128,14 @@ export async function fetchChannels(): Promise<PaymentChannel[]> {
   const data = await res.json();
   return data.channels || [];
 }
+
+export async function updateGlobalPool(amount: number): Promise<{ success: boolean; globalPool: number }> {
+  const res = await fetch(`${API_BASE}/admin/api/pool/set`, {
+    method: 'POST',
+    headers: getAuthHeaders() as Record<string, string>,
+    body: JSON.stringify({ amount }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Failed to update pool');
+  return data;
+}

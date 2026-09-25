@@ -13,9 +13,12 @@ import {
   ArrowRight,
   ShieldAlert,
   Coins,
+  DollarSign,
+  Sliders,
+  X,
 } from 'lucide-react';
 import Link from 'next/link';
-import { fetchStats, fetchDeposits } from '@/lib/api';
+import { fetchStats, fetchDeposits, updateGlobalPool } from '@/lib/api';
 import { DashboardStats, DepositRequest } from '@/lib/types';
 import { useAdminSocket } from '@/lib/socket';
 
@@ -30,6 +33,7 @@ export default function DashboardPage() {
     paidWithdrawals: 0,
     totalWithdrawnAmount: 0,
     globalPool: 0,
+    companyNetProfit: 0,
   });
 
   const [pendingDeposits, setPendingDeposits] = useState<DepositRequest[]>([]);
@@ -37,6 +41,11 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isToastError, setIsToastError] = useState(false);
+
+  // Pool adjustment modal
+  const [isPoolModalOpen, setIsPoolModalOpen] = useState(false);
+  const [poolInput, setPoolInput] = useState('');
+  const [isSubmittingPool, setIsSubmittingPool] = useState(false);
 
   const showToast = useCallback((msg: string, isError = false) => {
     setToastMessage(msg);
@@ -77,6 +86,26 @@ export default function DashboardPage() {
     }
   );
 
+  const handleUpdatePool = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amt = parseFloat(poolInput);
+    if (isNaN(amt) || amt < 0) {
+      showToast('Please enter a valid amount', true);
+      return;
+    }
+    setIsSubmittingPool(true);
+    try {
+      const res = await updateGlobalPool(amt);
+      showToast(`Global Pool liability buffer updated to LKR ${res.globalPool.toLocaleString()}`);
+      setIsPoolModalOpen(false);
+      loadData();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update pool', true);
+    } finally {
+      setIsSubmittingPool(false);
+    }
+  };
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       {/* Page Title & Status Banner */}
@@ -92,6 +121,17 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setPoolInput((stats.globalPool || 0).toString());
+              setIsPoolModalOpen(true);
+            }}
+            className="px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer"
+          >
+            <Sliders className="w-3.5 h-3.5" />
+            <span>Adjust Pool Buffer</span>
+          </button>
+
           <div className="px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-semibold flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span>PostgreSQL & Redis Sync: Live</span>
@@ -99,17 +139,45 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Stats Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4">
+      {/* Stats Cards Grid: 8 Cards (4x2 Responsive) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <MetricCard
+          title="Net House Profit"
+          value={`LKR ${(stats.companyNetProfit || 0).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+          })}`}
+          subtitle="Realized revenue: Deposits - Payouts - Balances"
+          icon={DollarSign}
+          variant="emerald"
+          highlight={true}
+        />
         <MetricCard
           title="Global Pool"
           value={`LKR ${(stats.globalPool || 0).toLocaleString(undefined, {
             minimumFractionDigits: 2,
           })}`}
-          subtitle="Real-time company liability buffer"
+          subtitle="Redis persisted liability buffer"
           icon={Coins}
           variant="amber"
           highlight={true}
+        />
+        <MetricCard
+          title="Deposited Volume"
+          value={`LKR ${(stats.totalDepositedAmount || 0).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+          })}`}
+          subtitle="Total lifetime volume"
+          icon={TrendingUp}
+          variant="blue"
+        />
+        <MetricCard
+          title="Circulating Wallets"
+          value={`LKR ${(stats.totalSystemBalance || 0).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+          })}`}
+          subtitle="Active player balance"
+          icon={Wallet}
+          variant="purple"
         />
         <MetricCard
           title="Pending Deposits"
@@ -118,6 +186,13 @@ export default function DashboardPage() {
           icon={Clock}
           variant="amber"
           highlight={stats.pendingDeposits > 0}
+        />
+        <MetricCard
+          title="Approved Deposits"
+          value={stats.approvedDeposits}
+          subtitle="Processed successfully"
+          icon={CheckCircle}
+          variant="emerald"
         />
         <MetricCard
           title="Pending Withdrawals"
@@ -130,22 +205,6 @@ export default function DashboardPage() {
           highlight={(stats.pendingWithdrawals || 0) > 0}
         />
         <MetricCard
-          title="Approved Deposits"
-          value={stats.approvedDeposits}
-          subtitle="Processed successfully"
-          icon={CheckCircle}
-          variant="emerald"
-        />
-        <MetricCard
-          title="Deposited Volume"
-          value={`LKR ${(stats.totalDepositedAmount || 0).toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-          })}`}
-          subtitle="Total lifetime volume"
-          icon={TrendingUp}
-          variant="blue"
-        />
-        <MetricCard
           title="Paid Withdrawals"
           value={`LKR ${(stats.totalWithdrawnAmount || 0).toLocaleString(undefined, {
             minimumFractionDigits: 2,
@@ -153,15 +212,6 @@ export default function DashboardPage() {
           subtitle={`${stats.paidWithdrawals || 0} payouts sent`}
           icon={Wallet}
           variant="blue"
-        />
-        <MetricCard
-          title="Circulating Wallets"
-          value={`LKR ${(stats.totalSystemBalance || 0).toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-          })}`}
-          subtitle="Active player balance"
-          icon={Wallet}
-          variant="purple"
         />
       </div>
 
@@ -179,7 +229,7 @@ export default function DashboardPage() {
                   </span>
                 )}
               </div>
-              <span className="text-xs text-gray-400">Zero-latency live stream</span>
+              <span className="text-xs text-gray-500 font-mono">Zero-latency live stream</span>
             </div>
 
             <PendingDepositsTable
@@ -189,13 +239,13 @@ export default function DashboardPage() {
             />
           </div>
 
-          <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-gray-400">
-            <span>Approvals atomically credit player wallet and record ledger entry.</span>
+          <div className="pt-4 border-t border-white/5 mt-4 flex items-center justify-between">
+            <span className="text-xs text-gray-400">Review pending slips before manual confirmation</span>
             <Link
               href="/deposits"
-              className="text-blue-400 hover:text-blue-300 font-bold inline-flex items-center gap-1 transition-all"
+              className="text-xs text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1.5 transition-colors"
             >
-              <span>View full history</span>
+              <span>Full Deposit History</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -247,6 +297,64 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Adjust Global Pool Modal */}
+      {isPoolModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-md rounded-2xl bg-[#0f172a] border border-amber-500/30 p-6 shadow-2xl shadow-amber-500/10">
+            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <Coins className="w-5 h-5 text-amber-400" />
+                <h3 className="text-base font-bold text-white">Adjust Global Pool Buffer</h3>
+              </div>
+              <button
+                onClick={() => setIsPoolModalOpen(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdatePool} className="mt-4 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                  Pool Buffer Amount (LKR)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={poolInput}
+                  onChange={(e) => setPoolInput(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono text-sm focus:outline-none focus:border-amber-400"
+                  placeholder="e.g. 50000"
+                  required
+                />
+                <p className="text-[11px] text-gray-400 mt-1.5">
+                  This value is persisted directly into Redis and represents the company liability buffer used to cap multipliers and cover player payouts.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setIsPoolModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-300 hover:bg-slate-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingPool}
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-amber-500 text-black hover:bg-amber-400 transition-colors disabled:opacity-50"
+                >
+                  {isSubmittingPool ? 'Saving...' : 'Save to Redis'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Local Toast Alert */}
       {toastMessage && (
