@@ -1,4 +1,4 @@
-import { DashboardStats, DepositRequest, WithdrawalRequest, User, PaymentChannel } from './types';
+import { DashboardStats, DepositRequest, WithdrawalRequest, User, PaymentChannel, PoolAuditLog } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -138,4 +138,30 @@ export async function updateGlobalPool(amount: number): Promise<{ success: boole
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Failed to update pool');
   return data;
+}
+
+export async function adjustGlobalPool(params: {
+  action: 'TOP_UP' | 'PROFIT_SKIM' | 'SET_TARGET';
+  amount: number;
+  note?: string;
+  adminUser?: string;
+}): Promise<{ success: boolean; globalPool: number; auditLog: PoolAuditLog }> {
+  const res = await fetch(`${API_BASE}/admin/api/pool/adjust`, {
+    method: 'POST',
+    headers: getAuthHeaders() as Record<string, string>,
+    body: JSON.stringify(params),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Failed to adjust pool');
+  return data;
+}
+
+export async function fetchPoolLogs(limit: number = 10): Promise<PoolAuditLog[]> {
+  const res = await fetch(`${API_BASE}/admin/api/pool/logs?limit=${limit}`, {
+    cache: 'no-store',
+    headers: getAuthHeaders(),
+  });
+  if (res.status === 401) throw new Error('Unauthorized');
+  if (!res.ok) throw new Error('Failed to fetch pool logs');
+  return res.json();
 }

@@ -16,10 +16,15 @@ import {
   DollarSign,
   Sliders,
   X,
+  ShieldCheck,
+  ArrowUpRight,
+  ArrowDownRight,
+  History,
+  AlertTriangle,
 } from 'lucide-react';
 import Link from 'next/link';
-import { fetchStats, fetchDeposits, updateGlobalPool } from '@/lib/api';
-import { DashboardStats, DepositRequest } from '@/lib/types';
+import { fetchStats, fetchDeposits, adjustGlobalPool, fetchPoolLogs } from '@/lib/api';
+import { DashboardStats, DepositRequest, PoolAuditLog } from '@/lib/types';
 import { useAdminSocket } from '@/lib/socket';
 
 export default function DashboardPage() {
@@ -42,10 +47,14 @@ export default function DashboardPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isToastError, setIsToastError] = useState(false);
 
-  // Pool adjustment modal
+  // Pool adjustment modal states
   const [isPoolModalOpen, setIsPoolModalOpen] = useState(false);
-  const [poolInput, setPoolInput] = useState('');
+  const [poolActionTab, setPoolActionTab] = useState<'TOP_UP' | 'PROFIT_SKIM' | 'SET_TARGET'>('TOP_UP');
+  const [poolInputAmount, setPoolInputAmount] = useState<string>('');
+  const [poolNote, setPoolNote] = useState<string>('');
   const [isSubmittingPool, setIsSubmittingPool] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<PoolAuditLog[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
 
   const showToast = useCallback((msg: string, isError = false) => {
     setToastMessage(msg);
@@ -83,28 +92,73 @@ export default function DashboardPage() {
     },
     () => {
       loadData();
+    },
+    (poolData) => {
+      if (poolData?.globalPool !== undefined) {
+        setStats((prev) => ({ ...prev, globalPool: poolData.globalPool }));
+      }
     }
   );
 
-  const handleUpdatePool = async (e: React.FormEvent) => {
+  const openPoolModal = async () => {
+    setPoolActionTab('TOP_UP');
+    setPoolInputAmount('');
+    setPoolNote('');
+    setIsPoolModalOpen(true);
+    setLoadingLogs(true);
+    try {
+      const logs = await fetchPoolLogs(5);
+      setAuditLogs(logs);
+    } catch (err) {
+      console.error('Failed to load pool audit logs:', err);
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
+  const handleAdjustPool = async (e: React.FormEvent) => {
     e.preventDefault();
-    const amt = parseFloat(poolInput);
-    if (isNaN(amt) || amt < 0) {
-      showToast('Please enter a valid amount', true);
+    const amt = parseFloat(poolInputAmount);
+    if (isNaN(amt) || amt <= 0) {
+      showToast('Please enter a valid positive amount', true);
       return;
     }
+
+    const currentPool = stats.globalPool || 0;
+    if (poolActionTab === 'PROFIT_SKIM' && currentPool - amt < 5000) {
+      showToast(`Cannot skim: Resulting pool (LKR ${(currentPool - amt).toLocaleString()}) must stay at or above safety floor LKR 5,000`, true);
+      return;
+    }
+    if (poolActionTab === 'SET_TARGET' && amt < 5000) {
+      showToast('Target pool must be at least LKR 5,000', true);
+      return;
+    }
+
     setIsSubmittingPool(true);
     try {
-      const res = await updateGlobalPool(amt);
-      showToast(`Global Pool liability buffer updated to LKR ${res.globalPool.toLocaleString()}`);
+      const res = await adjustGlobalPool({
+        action: poolActionTab,
+        amount: amt,
+        note: poolNote.trim() || undefined,
+        adminUser: 'Super Admin',
+      });
+      showToast(`Success: Global Pool buffer adjusted to LKR ${res.globalPool.toLocaleString()}`);
       setIsPoolModalOpen(false);
       loadData();
     } catch (err: any) {
-      showToast(err.message || 'Failed to update pool', true);
+      showToast(err.message || 'Failed to adjust pool buffer', true);
     } finally {
       setIsSubmittingPool(false);
     }
   };
+
+  // Live preview calculation for the modal
+  const numInput = parseFloat(poolInputAmount) || 0;
+  const currentPoolVal = stats.globalPool || 0;
+  let previewTarget = currentPoolVal;
+  if (poolActionTab === 'TOP_UP') previewTarget = currentPoolVal + numInput;
+  else if (poolActionTab === 'PROFIT_SKIM') previewTarget = currentPoolVal - numInput;
+  else if (poolActionTab === 'SET_TARGET') previewTarget = numInput;
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -122,14 +176,11 @@ export default function DashboardPage() {
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => {
-              setPoolInput((stats.globalPool || 0).toString());
-              setIsPoolModalOpen(true);
-            }}
-            className="px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer"
+            onClick={openPoolModal}
+            className="px-4 py-2 rounded-full bg-gradient-to-r from-amber-500/20 to-amber-600/10 border border-amber-500/40 text-amber-400 hover:border-amber-400 hover:from-amber-500/30 text-xs font-bold flex items-center gap-2 transition-all shadow-lg shadow-amber-500/10 cursor-pointer"
           >
             <Sliders className="w-3.5 h-3.5" />
-            <span>Adjust Pool Buffer</span>
+            <span>Manage Pool Buffer</span>
           </button>
 
           <div className="px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-semibold flex items-center gap-2">
@@ -156,7 +207,7 @@ export default function DashboardPage() {
           value={`LKR ${(stats.globalPool || 0).toLocaleString(undefined, {
             minimumFractionDigits: 2,
           })}`}
-          subtitle="Redis persisted liability buffer"
+          subtitle="Active liability buffer in Redis"
           icon={Coins}
           variant="amber"
           highlight={true}
@@ -298,60 +349,291 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Adjust Global Pool Modal */}
+      {/* Adjust Global Pool Modal (Full Enterprise Design) */}
       {isPoolModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-md rounded-2xl bg-[#0f172a] border border-amber-500/30 p-6 shadow-2xl shadow-amber-500/10">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-xl rounded-3xl bg-[#0b1222] border border-amber-500/30 p-6 shadow-2xl shadow-black/60 overflow-hidden">
+            {/* Header */}
             <div className="flex items-center justify-between pb-4 border-b border-white/10">
-              <div className="flex items-center gap-2">
-                <Coins className="w-5 h-5 text-amber-400" />
-                <h3 className="text-base font-bold text-white">Adjust Global Pool Buffer</h3>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
+                  <Coins className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">Global Pool Buffer Manager</h3>
+                  <p className="text-[11px] text-gray-400">
+                    Real-time liability buffer & payout solvency control
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => setIsPoolModalOpen(false)}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleUpdatePool} className="mt-4 space-y-4">
+            {/* Current Pool & Capacity Snapshot */}
+            <div className="mt-4 p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-slate-900 to-slate-900/80 border border-amber-500/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400/80">
+                    Current Active Buffer (In Redis)
+                  </span>
+                  <div className="text-2xl font-black text-white mt-0.5">
+                    LKR {(stats.globalPool || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                    Safety Floor Limit
+                  </span>
+                  <div className="text-xs font-mono font-bold text-emerald-400 mt-1">
+                    Min LKR 5,000.00
+                  </div>
+                </div>
+              </div>
+
+              {/* Multiplier capacity indicator */}
+              <div className="mt-3 pt-3 border-t border-white/5 flex items-center gap-2 text-[11px] text-gray-300">
+                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>
+                  Current buffer safely supports up to{' '}
+                  <strong className="text-amber-400">
+                    {((stats.globalPool || 0) / 500).toFixed(1)}x multiplier
+                  </strong>{' '}
+                  on a LKR 500 single bet before triggering dynamic liability crash.
+                </span>
+              </div>
+            </div>
+
+            {/* Operation Mode Tabs */}
+            <div className="mt-5 grid grid-cols-3 gap-2 p-1 rounded-xl bg-slate-900 border border-white/5">
+              <button
+                type="button"
+                onClick={() => {
+                  setPoolActionTab('TOP_UP');
+                  setPoolInputAmount('');
+                }}
+                className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  poolActionTab === 'TOP_UP'
+                    ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <ArrowUpRight className="w-3.5 h-3.5" />
+                <span>Quick Top-Up</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setPoolActionTab('PROFIT_SKIM');
+                  setPoolInputAmount('');
+                }}
+                className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  poolActionTab === 'PROFIT_SKIM'
+                    ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <ArrowDownRight className="w-3.5 h-3.5" />
+                <span>Profit Skim</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setPoolActionTab('SET_TARGET');
+                  setPoolInputAmount('');
+                }}
+                className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  poolActionTab === 'SET_TARGET'
+                    ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <Sliders className="w-3.5 h-3.5" />
+                <span>Set Target</span>
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleAdjustPool} className="mt-4 space-y-4">
+              {/* Presets */}
+              {poolActionTab === 'TOP_UP' && (
+                <div>
+                  <span className="block text-[11px] font-semibold text-gray-400 mb-2">
+                    Quick Inject Presets:
+                  </span>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[10000, 25000, 50000, 100000].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setPoolInputAmount(preset.toString())}
+                        className="py-1.5 px-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-emerald-400 text-xs font-mono font-bold transition-colors cursor-pointer"
+                      >
+                        +LKR {(preset / 1000).toFixed(0)}k
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {poolActionTab === 'PROFIT_SKIM' && (
+                <div>
+                  <span className="block text-[11px] font-semibold text-gray-400 mb-2">
+                    Quick Skim Presets:
+                  </span>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[5000, 10000, 25000, 50000].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setPoolInputAmount(preset.toString())}
+                        className="py-1.5 px-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-amber-400 text-xs font-mono font-bold transition-colors cursor-pointer"
+                      >
+                        -LKR {(preset / 1000).toFixed(0)}k
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Amount Input */}
               <div>
                 <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-                  Pool Buffer Amount (LKR)
+                  {poolActionTab === 'TOP_UP' && 'Amount to Add (LKR)'}
+                  {poolActionTab === 'PROFIT_SKIM' && 'Amount to Skim / Extract (LKR)'}
+                  {poolActionTab === 'SET_TARGET' && 'New Target Pool Buffer (LKR)'}
                 </label>
                 <input
                   type="number"
                   step="0.01"
-                  min="0"
-                  value={poolInput}
-                  onChange={(e) => setPoolInput(e.target.value)}
+                  min={poolActionTab === 'SET_TARGET' ? 5000 : 1}
+                  value={poolInputAmount}
+                  onChange={(e) => setPoolInputAmount(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono text-sm focus:outline-none focus:border-amber-400"
-                  placeholder="e.g. 50000"
+                  placeholder={poolActionTab === 'SET_TARGET' ? 'Min 5000' : 'e.g. 25000'}
                   required
                 />
-                <p className="text-[11px] text-gray-400 mt-1.5">
-                  This value is persisted directly into Redis and represents the company liability buffer used to cap multipliers and cover player payouts.
-                </p>
               </div>
 
+              {/* Reason / Note */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                  Audit Reason / Note (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={poolNote}
+                  onChange={(e) => setPoolNote(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-400"
+                  placeholder="e.g. Weekend reserve injection, Skimming week 3 profit"
+                />
+              </div>
+
+              {/* Dynamic Preview & Warnings */}
+              {numInput > 0 && (
+                <div
+                  className={`p-3 rounded-xl border text-xs flex items-center justify-between ${
+                    previewTarget < 5000
+                      ? 'bg-red-500/10 border-red-500/30 text-red-300'
+                      : 'bg-white/[0.03] border-white/10 text-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {previewTarget < 5000 ? (
+                      <AlertTriangle className="w-4 h-4 text-red-400" />
+                    ) : (
+                      <TrendingUp className="w-4 h-4 text-amber-400" />
+                    )}
+                    <span>Resulting Buffer:</span>
+                  </div>
+                  <span className="font-mono font-bold text-white text-sm">
+                    LKR {previewTarget.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
+
+              {/* Action Buttons */}
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
                 <button
                   type="button"
                   onClick={() => setIsPoolModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-300 hover:bg-slate-800 transition-colors"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-300 hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmittingPool}
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-amber-500 text-black hover:bg-amber-400 transition-colors disabled:opacity-50"
+                  disabled={isSubmittingPool || (numInput > 0 && previewTarget < 5000)}
+                  className="px-6 py-2 rounded-xl text-xs font-bold bg-amber-500 text-black hover:bg-amber-400 transition-colors disabled:opacity-40 cursor-pointer shadow-lg shadow-amber-500/20"
                 >
-                  {isSubmittingPool ? 'Saving...' : 'Save to Redis'}
+                  {isSubmittingPool ? 'Updating Redis...' : 'Confirm & Save'}
                 </button>
               </div>
             </form>
+
+            {/* Audit History Snapshot */}
+            <div className="mt-5 pt-4 border-t border-white/10">
+              <div className="flex items-center justify-between mb-2.5">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-gray-400">
+                  <History className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Recent Audit Trail (PostgreSQL)</span>
+                </div>
+                <span className="text-[10px] text-gray-500 font-mono">Immutable ledger</span>
+              </div>
+
+              {loadingLogs ? (
+                <p className="text-xs text-gray-500 py-2">Loading audit history...</p>
+              ) : auditLogs.length === 0 ? (
+                <p className="text-[11px] text-gray-500 py-2 text-center bg-slate-900/50 rounded-xl">
+                  No manual pool adjustments recorded yet.
+                </p>
+              ) : (
+                <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+                  {auditLogs.map((log) => (
+                    <div
+                      key={log.id}
+                      className="p-2 rounded-lg bg-slate-900/70 border border-white/5 flex items-center justify-between text-[11px]"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-[9px] font-black ${
+                            log.action === 'TOP_UP'
+                              ? 'bg-emerald-500/20 text-emerald-400'
+                              : log.action === 'PROFIT_SKIM'
+                              ? 'bg-amber-500/20 text-amber-400'
+                              : 'bg-blue-500/20 text-blue-400'
+                          }`}
+                        >
+                          {log.action}
+                        </span>
+                        <span className="text-gray-300 font-medium">
+                          {log.note || `${log.adminUser} adjustment`}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <div
+                          className={`font-mono font-bold ${
+                            Number(log.delta) >= 0 ? 'text-emerald-400' : 'text-red-400'
+                          }`}
+                        >
+                          {Number(log.delta) >= 0 ? '+' : ''}
+                          LKR {Number(log.delta).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </div>
+                        <div className="text-[9px] text-gray-500">
+                          {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

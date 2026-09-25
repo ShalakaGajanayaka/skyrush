@@ -21,12 +21,16 @@ export function getSocket(): Socket {
 export function useAdminSocket(
   onNewDeposit?: (deposit: any) => void,
   onNewWithdrawal?: (withdrawal: any) => void,
+  onPoolUpdated?: (poolData: any) => void,
 ) {
   const onNewDepositRef = useRef(onNewDeposit);
   onNewDepositRef.current = onNewDeposit;
 
   const onNewWithdrawalRef = useRef(onNewWithdrawal);
   onNewWithdrawalRef.current = onNewWithdrawal;
+
+  const onPoolUpdatedRef = useRef(onPoolUpdated);
+  onPoolUpdatedRef.current = onPoolUpdated;
 
   useEffect(() => {
     const s = getSocket();
@@ -43,12 +47,20 @@ export function useAdminSocket(
       }
     };
 
+    const handlePoolUpdated = (data: any) => {
+      if (onPoolUpdatedRef.current) {
+        onPoolUpdatedRef.current(data);
+      }
+    };
+
     s.on('newDepositSubmitted', handleNewDeposit);
     s.on('newWithdrawalSubmitted', handleNewWithdrawal);
+    s.on('globalPoolUpdated', handlePoolUpdated);
 
     return () => {
       s.off('newDepositSubmitted', handleNewDeposit);
       s.off('newWithdrawalSubmitted', handleNewWithdrawal);
+      s.off('globalPoolUpdated', handlePoolUpdated);
     };
   }, []);
 }

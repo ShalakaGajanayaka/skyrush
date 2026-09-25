@@ -70,3 +70,14 @@ export interface PaymentChannel {
   instructions: string;
   iconName: string;
 }
+
+export interface PoolAuditLog {
+  id: string;
+  adminUser: string;
+  action: 'TOP_UP' | 'PROFIT_SKIM' | 'SET_TARGET';
+  previousAmount: number | string;
+  newAmount: number | string;
+  delta: number | string;
+  note?: string;
+  createdAt: string;
+}
