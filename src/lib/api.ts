@@ -15,12 +15,31 @@ function getAuthHeaders(): HeadersInit {
   return { 'Content-Type': 'application/json' };
 }
 
+/**
+ * Enterprise Auth Fetch Wrapper:
+ * Intercepts 401 Unauthorized responses, clears invalid/expired tokens from localStorage,
+ * and broadcasts 'auth:unauthorized' to automatically reset AdminShell to Login screen.
+ */
+async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  const headers = {
+    ...getAuthHeaders(),
+    ...(options.headers || {})
+  };
+  const res = await fetch(url, { ...options, headers });
+  if (res.status === 401) {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('admin_token');
+      window.dispatchEvent(new Event('auth:unauthorized'));
+    }
+    throw new Error('Unauthorized');
+  }
+  return res;
+}
+
 export async function fetchStats(): Promise<DashboardStats> {
-  const res = await fetch(`${API_BASE}/admin/api/stats`, { 
-    cache: 'no-store',
-    headers: getAuthHeaders()
+  const res = await authFetch(`${API_BASE}/admin/api/stats`, { 
+    cache: 'no-store'
   });
-  if (res.status === 401) throw new Error('Unauthorized');
   if (!res.ok) throw new Error('Failed to fetch statistics');
   return res.json();
 }
@@ -30,11 +49,9 @@ export async function fetchDeposits(status?: string, limit: number = 100): Promi
   if (status && status !== 'ALL') query.set('status', status);
   query.set('limit', limit.toString());
 
-  const res = await fetch(`${API_BASE}/admin/api/deposits?${query.toString()}`, { 
-    cache: 'no-store',
-    headers: getAuthHeaders()
+  const res = await authFetch(`${API_BASE}/admin/api/deposits?${query.toString()}`, { 
+    cache: 'no-store'
   });
-  if (res.status === 401) throw new Error('Unauthorized');
   if (!res.ok) throw new Error('Failed to fetch deposits');
   return res.json();
 }
@@ -44,19 +61,16 @@ export async function fetchWithdrawals(status?: string, limit: number = 100): Pr
   if (status && status !== 'ALL') query.set('status', status);
   query.set('limit', limit.toString());
 
-  const res = await fetch(`${API_BASE}/admin/api/withdrawals?${query.toString()}`, { 
-    cache: 'no-store',
-    headers: getAuthHeaders()
+  const res = await authFetch(`${API_BASE}/admin/api/withdrawals?${query.toString()}`, { 
+    cache: 'no-store'
   });
-  if (res.status === 401) throw new Error('Unauthorized');
   if (!res.ok) throw new Error('Failed to fetch withdrawals');
   return res.json();
 }
 
 export async function approveWithdrawal(id: string, adminNote?: string, adminUser: string = 'Next.js Admin'): Promise<any> {
-  const res = await fetch(`${API_BASE}/admin/api/withdrawals/${id}/approve`, {
+  const res = await authFetch(`${API_BASE}/admin/api/withdrawals/${id}/approve`, {
     method: 'POST',
-    headers: getAuthHeaders() as Record<string, string>,
     body: JSON.stringify({ adminNote, adminUser }),
   });
   const data = await res.json();
@@ -65,9 +79,8 @@ export async function approveWithdrawal(id: string, adminNote?: string, adminUse
 }
 
 export async function rejectWithdrawal(id: string, reason?: string, adminUser: string = 'Next.js Admin'): Promise<any> {
-  const res = await fetch(`${API_BASE}/admin/api/withdrawals/${id}/reject`, {
+  const res = await authFetch(`${API_BASE}/admin/api/withdrawals/${id}/reject`, {
     method: 'POST',
-    headers: getAuthHeaders() as Record<string, string>,
     body: JSON.stringify({ reason, adminUser }),
   });
   const data = await res.json();
@@ -76,9 +89,8 @@ export async function rejectWithdrawal(id: string, reason?: string, adminUser: s
 }
 
 export async function approveDeposit(id: string, adminUser: string = 'Next.js Admin'): Promise<any> {
-  const res = await fetch(`${API_BASE}/admin/api/deposits/${id}/approve`, {
+  const res = await authFetch(`${API_BASE}/admin/api/deposits/${id}/approve`, {
     method: 'POST',
-    headers: getAuthHeaders() as Record<string, string>,
     body: JSON.stringify({ adminUser }),
   });
   const data = await res.json();
@@ -87,9 +99,8 @@ export async function approveDeposit(id: string, adminUser: string = 'Next.js Ad
 }
 
 export async function rejectDeposit(id: string, reason?: string, adminUser: string = 'Next.js Admin'): Promise<any> {
-  const res = await fetch(`${API_BASE}/admin/api/deposits/${id}/reject`, {
+  const res = await authFetch(`${API_BASE}/admin/api/deposits/${id}/reject`, {
     method: 'POST',
-    headers: getAuthHeaders() as Record<string, string>,
     body: JSON.stringify({ reason, adminUser }),
   });
   const data = await res.json();
@@ -98,9 +109,8 @@ export async function rejectDeposit(id: string, reason?: string, adminUser: stri
 }
 
 export async function manualCredit(identifier: string, amount: number, note?: string, adminUser: string = 'Next.js Admin'): Promise<any> {
-  const res = await fetch(`${API_BASE}/admin/api/manual-credit`, {
+  const res = await authFetch(`${API_BASE}/admin/api/manual-credit`, {
     method: 'POST',
-    headers: getAuthHeaders() as Record<string, string>,
     body: JSON.stringify({ identifier, amount, note, adminUser }),
   });
   const data = await res.json();
@@ -113,26 +123,23 @@ export async function fetchUsers(search?: string, limit: number = 50): Promise<U
   if (search) query.set('search', search);
   query.set('limit', limit.toString());
 
-  const res = await fetch(`${API_BASE}/admin/api/users?${query.toString()}`, { 
-    cache: 'no-store',
-    headers: getAuthHeaders()
+  const res = await authFetch(`${API_BASE}/admin/api/users?${query.toString()}`, { 
+    cache: 'no-store'
   });
-  if (res.status === 401) throw new Error('Unauthorized');
   if (!res.ok) throw new Error('Failed to fetch users');
   return res.json();
 }
 
 export async function fetchChannels(): Promise<PaymentChannel[]> {
-  const res = await fetch(`${API_BASE}/admin/channels`, { cache: 'no-store' });
+  const res = await authFetch(`${API_BASE}/admin/channels`, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to fetch channels');
   const data = await res.json();
   return data.channels || [];
 }
 
 export async function updateGlobalPool(amount: number): Promise<{ success: boolean; globalPool: number }> {
-  const res = await fetch(`${API_BASE}/admin/api/pool/set`, {
+  const res = await authFetch(`${API_BASE}/admin/api/pool/set`, {
     method: 'POST',
-    headers: getAuthHeaders() as Record<string, string>,
     body: JSON.stringify({ amount }),
   });
   const data = await res.json();
@@ -146,9 +153,8 @@ export async function adjustGlobalPool(params: {
   note?: string;
   adminUser?: string;
 }): Promise<{ success: boolean; globalPool: number; auditLog: PoolAuditLog }> {
-  const res = await fetch(`${API_BASE}/admin/api/pool/adjust`, {
+  const res = await authFetch(`${API_BASE}/admin/api/pool/adjust`, {
     method: 'POST',
-    headers: getAuthHeaders() as Record<string, string>,
     body: JSON.stringify(params),
   });
   const data = await res.json();
@@ -157,11 +163,9 @@ export async function adjustGlobalPool(params: {
 }
 
 export async function fetchPoolLogs(limit: number = 10): Promise<PoolAuditLog[]> {
-  const res = await fetch(`${API_BASE}/admin/api/pool/logs?limit=${limit}`, {
+  const res = await authFetch(`${API_BASE}/admin/api/pool/logs?limit=${limit}`, {
     cache: 'no-store',
-    headers: getAuthHeaders(),
   });
-  if (res.status === 401) throw new Error('Unauthorized');
   if (!res.ok) throw new Error('Failed to fetch pool logs');
   return res.json();
 }

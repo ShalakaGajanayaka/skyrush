@@ -18,15 +18,6 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const [isToastError, setIsToastError] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
-  useEffect(() => {
-    const token = localStorage.getItem('admin_token');
-    if (token) {
-      setIsAuthenticated(true);
-    } else {
-      setIsAuthenticated(false);
-    }
-  }, []);
-
   const showToast = useCallback((msg: string, isError: boolean = false) => {
     setToastMessage(msg);
     setIsToastError(isError);
@@ -34,6 +25,21 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       setToastMessage(null);
     }, 4500);
   }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem('admin_token');
+    setIsAuthenticated(!!token);
+
+    const handleUnauthorized = () => {
+      setIsAuthenticated(false);
+      showToast('⚠️ Session expired or unauthorized. Please log in again.', true);
+    };
+
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => {
+      window.removeEventListener('auth:unauthorized', handleUnauthorized);
+    };
+  }, [showToast]);
 
   const playNotificationChime = useCallback(() => {
     if (!soundEnabled) return;
@@ -58,18 +64,20 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   }, [soundEnabled]);
 
   const loadPendingCount = useCallback(async () => {
+    if (!isAuthenticated) return;
     try {
       const stats = await fetchStats();
       setPendingCount(stats.pendingDeposits || 0);
       setPendingWithdrawalCount(stats.pendingWithdrawals || 0);
     } catch {}
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     loadPendingCount();
     const interval = setInterval(loadPendingCount, 15000);
     return () => clearInterval(interval);
-  }, [loadPendingCount]);
+  }, [isAuthenticated, loadPendingCount]);
 
   // Hook real-time WebSocket for new deposits and withdrawals
   useAdminSocket(
