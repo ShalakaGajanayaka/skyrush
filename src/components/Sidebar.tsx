@@ -69,7 +69,7 @@ export default function Sidebar({ pendingCount = 0, pendingWithdrawalCount = 0, 
           </div>
           <div>
             <h1 className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
-              SkyRush Aviator
+              SkyRush Operations
             </h1>
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
               Admin Portal

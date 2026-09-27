@@ -14,7 +14,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'SkyRush Aviator - Next.js Admin Portal',
+  title: 'SkyRush Operations - Admin Portal',
   description: 'Enterprise deposit approvals and real-time player balance operations',
 };
 
