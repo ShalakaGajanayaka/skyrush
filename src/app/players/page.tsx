@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Users, Search, RefreshCw, PlusCircle, Trophy, Gamepad2, Coins, Sparkles, Video, Zap } from 'lucide-react';
+import { Users, Search, RefreshCw, PlusCircle, Trophy, Gamepad2, Coins, Sparkles, Video, Zap, RotateCcw } from 'lucide-react';
 import { fetchUsers } from '@/lib/api';
 import { User } from '@/lib/types';
 import ManualCreditModal from '@/components/ManualCreditModal';
 import MarketingModal from '@/components/MarketingModal';
+import BalanceAdjustmentModal from '@/components/BalanceAdjustmentModal';
 
 export default function PlayersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -15,6 +16,8 @@ export default function PlayersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [marketingUser, setMarketingUser] = useState<User | null>(null);
   const [isMarketingModalOpen, setIsMarketingModalOpen] = useState(false);
+  const [adjustUser, setAdjustUser] = useState<User | null>(null);
+  const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -183,6 +186,17 @@ export default function PlayersPage() {
                   <td className="py-3.5 px-4 text-right">
                     <div className="inline-flex items-center gap-2">
                       <button
+                        onClick={() => {
+                          setAdjustUser(u);
+                          setIsAdjustModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-600/15 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 font-bold text-xs transition-all active:scale-95"
+                        title="Adjust or Reset Balance to Zero"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Adjust</span>
+                      </button>
+                      <button
                         onClick={() => handleOpenMarketing(u)}
                         className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-purple-600/15 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 font-bold text-xs transition-all active:scale-95"
                         title="Marketing & Influencer Studio Settings"
@@ -222,6 +236,16 @@ export default function PlayersPage() {
         user={marketingUser}
         onSuccess={(updatedUser) => {
           showToast(`✅ Marketing mode updated for ${updatedUser.username}!`);
+          loadData(searchTerm);
+        }}
+      />
+
+      <BalanceAdjustmentModal
+        isOpen={isAdjustModalOpen}
+        onClose={() => setIsAdjustModalOpen(false)}
+        user={adjustUser}
+        onSuccess={(updatedUser, message) => {
+          showToast(`✅ ${message}`);
           loadData(searchTerm);
         }}
       />

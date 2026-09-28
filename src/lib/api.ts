@@ -195,3 +195,20 @@ export async function updateUserMarketingStatus(
   if (!res.ok) throw new Error(data.message || 'Failed to update marketing status');
   return data;
 }
+
+export async function adjustUserBalance(
+  userId: string,
+  params: {
+    action: 'RESET_ZERO' | 'SET_AMOUNT' | 'DEDUCT';
+    amount?: number;
+    reason?: string;
+  },
+): Promise<{ success: boolean; message: string; oldBalance: number; newBalance: number; delta: number; user: User }> {
+  const res = await authFetch(`${API_BASE}/admin/api/users/${userId}/adjust-balance`, {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Failed to adjust balance');
+  return data;
+}
