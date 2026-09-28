@@ -21,6 +21,11 @@ function getAuthHeaders(): HeadersInit {
  * and broadcasts 'auth:unauthorized' to automatically reset AdminShell to Login screen.
  */
 async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  if (typeof window !== 'undefined' && !localStorage.getItem('admin_token')) {
+    window.dispatchEvent(new Event('auth:unauthorized'));
+    throw new Error('Unauthorized');
+  }
+
   const headers = {
     ...getAuthHeaders(),
     ...(options.headers || {})

@@ -20,12 +20,18 @@ export default function PlayersPage() {
   };
 
   const loadData = useCallback(async (searchQuery = '') => {
+    if (typeof window !== 'undefined' && !localStorage.getItem('admin_token')) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const data = await fetchUsers(searchQuery, 100);
       setUsers(data);
-    } catch (err) {
-      console.error('Failed to load users', err);
+    } catch (err: any) {
+      if (err?.message !== 'Unauthorized') {
+        console.error('Failed to load users', err);
+      }
     } finally {
       setLoading(false);
     }

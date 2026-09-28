@@ -20,11 +20,17 @@ export default function PendingDepositsPage() {
   }, []);
 
   const loadData = useCallback(async () => {
+    if (typeof window !== 'undefined' && !localStorage.getItem('admin_token')) {
+      setLoading(false);
+      return;
+    }
     try {
       const data = await fetchDeposits('PENDING', 100);
       setDeposits(data);
     } catch (err: any) {
-      showToast(err.message || 'Failed to load pending deposits', true);
+      if (err?.message !== 'Unauthorized') {
+        showToast(err.message || 'Failed to load pending deposits', true);
+      }
     } finally {
       setLoading(false);
     }

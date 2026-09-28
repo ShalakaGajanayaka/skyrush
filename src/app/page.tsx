@@ -63,6 +63,10 @@ export default function DashboardPage() {
   }, []);
 
   const loadData = useCallback(async () => {
+    if (typeof window !== 'undefined' && !localStorage.getItem('admin_token')) {
+      setLoading(false);
+      return;
+    }
     try {
       const [statsData, pendingData, approvedData] = await Promise.all([
         fetchStats(),
@@ -73,7 +77,9 @@ export default function DashboardPage() {
       setPendingDeposits(pendingData);
       setRecentApproved(approvedData);
     } catch (err: any) {
-      console.error('Error fetching dashboard data:', err);
+      if (err?.message !== 'Unauthorized') {
+        console.error('Error fetching dashboard data:', err);
+      }
     } finally {
       setLoading(false);
     }

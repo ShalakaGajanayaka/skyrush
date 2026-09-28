@@ -21,11 +21,17 @@ export default function WithdrawalsPage() {
   }, []);
 
   const loadData = useCallback(async () => {
+    if (typeof window !== 'undefined' && !localStorage.getItem('admin_token')) {
+      setLoading(false);
+      return;
+    }
     try {
       const data = await fetchWithdrawals(filter, 100);
       setWithdrawals(data);
     } catch (err: any) {
-      showToast(err.message || 'Failed to load withdrawals', true);
+      if (err?.message !== 'Unauthorized') {
+        showToast(err.message || 'Failed to load withdrawals', true);
+      }
     } finally {
       setLoading(false);
     }

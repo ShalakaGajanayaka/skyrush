@@ -12,12 +12,18 @@ export default function DepositHistoryPage() {
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
+    if (typeof window !== 'undefined' && !localStorage.getItem('admin_token')) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const data = await fetchDeposits(filterStatus, 150);
       setDeposits(data);
-    } catch (err) {
-      console.error('Failed to load history', err);
+    } catch (err: any) {
+      if (err?.message !== 'Unauthorized') {
+        console.error('Failed to load history', err);
+      }
     } finally {
       setLoading(false);
     }
