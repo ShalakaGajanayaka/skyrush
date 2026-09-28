@@ -16,6 +16,7 @@ import {
   Loader2,
   Copy,
   Check,
+  RotateCcw,
 } from 'lucide-react';
 
 interface WithdrawalsTableProps {
@@ -186,6 +187,7 @@ export default function WithdrawalsTable({
               const isPending = req.status === 'PENDING';
               const isPaid = req.status === 'PAID';
               const isRejected = req.status === 'REJECTED';
+              const isCancelled = req.status === 'CANCELLED';
 
               return (
                 <tr
@@ -210,7 +212,11 @@ export default function WithdrawalsTable({
                         {req.currency}
                       </span>
                     </div>
-                    <span className="text-[10px] text-gray-400">Escrowed</span>
+                    {isCancelled ? (
+                      <span className="text-[10px] text-purple-400 font-medium">Restored to Wallet</span>
+                    ) : (
+                      <span className="text-[10px] text-gray-400">Escrowed</span>
+                    )}
                   </td>
 
                   {/* Payout Details */}
@@ -252,6 +258,19 @@ export default function WithdrawalsTable({
                         )}
                       </div>
                     )}
+                    {isCancelled && (
+                      <div className="space-y-0.5">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                          <RotateCcw className="w-3 h-3" />
+                          CANCELLED BY PLAYER
+                        </span>
+                        {req.adminNote && (
+                          <div className="text-[10px] text-purple-300/80 italic">
+                            {req.adminNote}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </td>
 
                   {/* Requested Date */}
@@ -288,6 +307,8 @@ export default function WithdrawalsTable({
                           <span>Reject & Refund</span>
                         </button>
                       </div>
+                    ) : isCancelled ? (
+                      <span className="text-purple-400/80 text-xs italic">Cancelled by User</span>
                     ) : (
                       <span className="text-gray-400 text-xs italic">Completed</span>
                     )}

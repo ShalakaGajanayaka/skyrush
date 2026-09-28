@@ -1,5 +1,5 @@
 export type DepositStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
-export type WithdrawalStatus = 'PENDING' | 'PAID' | 'REJECTED';
+export type WithdrawalStatus = 'PENDING' | 'PAID' | 'REJECTED' | 'CANCELLED';
 
 export interface DepositRequest {
   id: string;

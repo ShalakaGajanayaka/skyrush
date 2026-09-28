@@ -84,6 +84,7 @@ export default function WithdrawalsPage() {
           { key: 'PENDING', label: 'Pending Payout', badge: pendingCount > 0 ? pendingCount : undefined },
           { key: 'PAID', label: 'Paid / Completed' },
           { key: 'REJECTED', label: 'Rejected & Refunded' },
+          { key: 'CANCELLED', label: 'Cancelled by Player' },
         ].map((tab) => {
           const isActive = filter === tab.key;
           return (
