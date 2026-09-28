@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Users, Search, RefreshCw, PlusCircle, Trophy, Gamepad2, Coins } from 'lucide-react';
+import { Users, Search, RefreshCw, PlusCircle, Trophy, Gamepad2, Coins, Sparkles, Video, Zap } from 'lucide-react';
 import { fetchUsers } from '@/lib/api';
 import { User } from '@/lib/types';
 import ManualCreditModal from '@/components/ManualCreditModal';
+import MarketingModal from '@/components/MarketingModal';
 
 export default function PlayersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -12,6 +13,8 @@ export default function PlayersPage() {
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [marketingUser, setMarketingUser] = useState<User | null>(null);
+  const [isMarketingModalOpen, setIsMarketingModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -47,6 +50,11 @@ export default function PlayersPage() {
   const handleOpenCredit = (username: string) => {
     setSelectedUser(username);
     setIsModalOpen(true);
+  };
+
+  const handleOpenMarketing = (u: User) => {
+    setMarketingUser(u);
+    setIsMarketingModalOpen(true);
   };
 
   return (
@@ -96,6 +104,7 @@ export default function PlayersPage() {
             <tr className="border-b border-white/5 text-gray-400 text-[11px] font-bold uppercase tracking-wider">
               <th className="py-3 px-4">Player Username</th>
               <th className="py-3 px-4">Contact / Identifier</th>
+              <th className="py-3 px-4">Role / Tag</th>
               <th className="py-3 px-4">Base Currency</th>
               <th className="py-3 px-4">Wallet Balance</th>
               <th className="py-3 px-4">Games Played</th>
@@ -106,7 +115,7 @@ export default function PlayersPage() {
           <tbody className="divide-y divide-white/[0.03]">
             {users.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-12 text-center text-gray-500">
+                <td colSpan={8} className="py-12 text-center text-gray-500">
                   No players found matching &quot;{searchTerm}&quot;.
                 </td>
               </tr>
@@ -123,6 +132,26 @@ export default function PlayersPage() {
                   </td>
                   <td className="py-3.5 px-4 text-gray-400 text-[11px]">
                     {u.email || u.phoneNumber || '-'}
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {u.isMarketing ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-extrabold text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                          <Video className="w-3 h-3 text-purple-400" />
+                          <span>MARKETING</span>
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full font-medium text-[10px] bg-gray-800 text-gray-400 border border-gray-700">
+                          Player
+                        </span>
+                      )}
+                      {u.isMarketing && u.isMarketingAutoWin && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-extrabold text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          <Zap className="w-2.5 h-2.5 fill-amber-300" />
+                          <span>AUTO-WIN</span>
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="py-3.5 px-4">
                     <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-blue-500/10 text-blue-300 border border-blue-500/20">
@@ -152,13 +181,23 @@ export default function PlayersPage() {
                     </div>
                   </td>
                   <td className="py-3.5 px-4 text-right">
-                    <button
-                      onClick={() => handleOpenCredit(u.username)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/15 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 font-bold text-xs transition-all active:scale-95"
-                    >
-                      <PlusCircle className="w-3.5 h-3.5" />
-                      <span>Credit</span>
-                    </button>
+                    <div className="inline-flex items-center gap-2">
+                      <button
+                        onClick={() => handleOpenMarketing(u)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-purple-600/15 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 font-bold text-xs transition-all active:scale-95"
+                        title="Marketing & Influencer Studio Settings"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                        <span>Studio</span>
+                      </button>
+                      <button
+                        onClick={() => handleOpenCredit(u.username)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/15 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 font-bold text-xs transition-all active:scale-95"
+                      >
+                        <PlusCircle className="w-3.5 h-3.5" />
+                        <span>Credit</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -173,6 +212,16 @@ export default function PlayersPage() {
         prefillUsername={selectedUser}
         onCreditSuccess={(user, amount) => {
           showToast(`✅ Successfully credited ${amount} to ${user?.username || selectedUser}!`);
+          loadData(searchTerm);
+        }}
+      />
+
+      <MarketingModal
+        isOpen={isMarketingModalOpen}
+        onClose={() => setIsMarketingModalOpen(false)}
+        user={marketingUser}
+        onSuccess={(updatedUser) => {
+          showToast(`✅ Marketing mode updated for ${updatedUser.username}!`);
           loadData(searchTerm);
         }}
       />

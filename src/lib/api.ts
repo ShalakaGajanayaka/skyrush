@@ -181,3 +181,17 @@ export async function fetchPoolLogs(limit: number = 10): Promise<PoolAuditLog[]>
   if (!res.ok) throw new Error('Failed to fetch pool logs');
   return res.json();
 }
+
+export async function updateUserMarketingStatus(
+  userId: string,
+  isMarketing: boolean,
+  isMarketingAutoWin: boolean,
+): Promise<{ success: boolean; message: string; user: User }> {
+  const res = await authFetch(`${API_BASE}/admin/api/users/${userId}/marketing`, {
+    method: 'POST',
+    body: JSON.stringify({ isMarketing, isMarketingAutoWin }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Failed to update marketing status');
+  return data;
+}

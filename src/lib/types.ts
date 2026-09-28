@@ -44,6 +44,9 @@ export interface User {
   balance: number | string;
   gamesPlayed: number;
   totalWon: number | string;
+  isFrozen?: boolean;
+  isMarketing?: boolean;
+  isMarketingAutoWin?: boolean;
   createdAt: string;
 }
 
