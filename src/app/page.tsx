@@ -38,6 +38,7 @@ export default function DashboardPage() {
     paidWithdrawals: 0,
     totalWithdrawnAmount: 0,
     globalPool: 0,
+    pendingGlobalPool: null,
     companyNetProfit: 0,
   });
 
@@ -101,7 +102,11 @@ export default function DashboardPage() {
     },
     (poolData) => {
       if (poolData?.globalPool !== undefined) {
-        setStats((prev) => ({ ...prev, globalPool: poolData.globalPool }));
+        setStats((prev) => ({
+          ...prev,
+          globalPool: poolData.globalPool,
+          pendingGlobalPool: poolData.pendingGlobalPool ?? null,
+        }));
       }
     }
   );
@@ -148,7 +153,11 @@ export default function DashboardPage() {
         note: poolNote.trim() || undefined,
         adminUser: 'Super Admin',
       });
-      showToast(`Success: Global Pool buffer adjusted to LKR ${res.globalPool.toLocaleString()}`);
+      if (res.pending) {
+        showToast(`Scheduled: Global Pool will update to LKR ${(res.target ?? amt).toLocaleString()} on Next Round ✈️`);
+      } else {
+        showToast(`Success: Global Pool buffer adjusted to LKR ${res.globalPool.toLocaleString()}`);
+      }
       setIsPoolModalOpen(false);
       loadData();
     } catch (err: any) {
@@ -213,7 +222,11 @@ export default function DashboardPage() {
           value={`LKR ${(stats.globalPool || 0).toLocaleString(undefined, {
             minimumFractionDigits: 2,
           })}`}
-          subtitle="Active liability buffer in Redis"
+          subtitle={
+            stats.pendingGlobalPool
+              ? `⏳ Staged Next Round: LKR ${stats.pendingGlobalPool.toLocaleString()}`
+              : "Active liability buffer in Redis"
+          }
           icon={Coins}
           variant="amber"
           highlight={true}
@@ -387,8 +400,13 @@ export default function DashboardPage() {
                   <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400/80">
                     Current Active Buffer (In Redis)
                   </span>
-                  <div className="text-2xl font-black text-white mt-0.5">
-                    LKR {(stats.globalPool || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  <div className="text-2xl font-black text-white mt-0.5 flex flex-wrap items-center gap-2">
+                    <span>LKR {(stats.globalPool || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    {stats.pendingGlobalPool && (
+                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse">
+                        ⏳ Next Round: LKR {stats.pendingGlobalPool.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="text-right">

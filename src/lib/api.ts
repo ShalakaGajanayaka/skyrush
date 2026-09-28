@@ -157,7 +157,14 @@ export async function adjustGlobalPool(params: {
   amount: number;
   note?: string;
   adminUser?: string;
-}): Promise<{ success: boolean; globalPool: number; auditLog: PoolAuditLog }> {
+}): Promise<{
+  success: boolean;
+  globalPool: number;
+  pending?: boolean;
+  target?: number;
+  appliedRound?: string;
+  auditLog: PoolAuditLog;
+}> {
   const res = await authFetch(`${API_BASE}/admin/api/pool/adjust`, {
     method: 'POST',
     body: JSON.stringify(params),
