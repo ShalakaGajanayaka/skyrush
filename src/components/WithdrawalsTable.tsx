@@ -17,6 +17,7 @@ import {
   Copy,
   Check,
   RotateCcw,
+  Coins,
 } from 'lucide-react';
 
 interface WithdrawalsTableProps {
@@ -93,6 +94,44 @@ export default function WithdrawalsTable({
 
     if (!details || typeof details !== 'object') {
       return <span className="text-gray-400 italic">No details provided</span>;
+    }
+
+    if (method.toLowerCase().includes('binance') || details.binancePayId || details.network?.includes('BINANCE')) {
+      const payId = details.binancePayId || details.accountNumber;
+      return (
+        <div className="space-y-1 text-xs">
+          <div className="flex items-center gap-1.5 text-amber-400">
+            <Coins className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span className="font-semibold text-white">Binance / USDT</span>
+            {details.usdtAmount && (
+              <span className="text-[11px] font-bold text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                ≈ {details.usdtAmount} USDT
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-amber-300 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+              {payId}
+            </span>
+            <button
+              onClick={() => copyToClipboard(payId, 'binance')}
+              className="text-gray-400 hover:text-white transition-colors"
+              title="Copy Binance Pay ID"
+            >
+              {copiedKey === 'binance' ? (
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+              ) : (
+                <Copy className="w-3.5 h-3.5" />
+              )}
+            </button>
+          </div>
+          {details.nickname && (
+            <div className="text-[11px] text-gray-400">
+              Nickname: <span className="text-gray-200 font-medium">{details.nickname}</span>
+            </div>
+          )}
+        </div>
+      );
     }
 
     if (method.toUpperCase() === 'BANK') {
