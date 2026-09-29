@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { DepositRequest } from '@/lib/types';
-import { Check, X, Copy, QrCode, Phone, Building2, Clock, CheckCircle2 } from 'lucide-react';
+import { Check, X, Copy, QrCode, Phone, Building2, Clock, CheckCircle2, Coins, ExternalLink } from 'lucide-react';
 import { approveDeposit, rejectDeposit } from '@/lib/api';
 
 interface PendingDepositsTableProps {
@@ -64,6 +64,14 @@ export default function PendingDepositsTable({
 
   const getChannelBadge = (method: string) => {
     const m = (method || '').toLowerCase();
+    if (m.includes('binance') || m.includes('usdt') || m.includes('crypto')) {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/25">
+          <Coins className="w-3 h-3 text-amber-400" />
+          <span>Binance / USDT</span>
+        </span>
+      );
+    }
     if (m.includes('ipay')) {
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
@@ -144,7 +152,7 @@ export default function PendingDepositsTable({
               <td className="py-3.5 px-4">{getChannelBadge(d.paymentMethod)}</td>
               <td className="py-3.5 px-4">
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-300 font-mono text-xs font-semibold">
-                  <span>{d.referenceNumber}</span>
+                  <span className="max-w-[170px] truncate" title={d.referenceNumber}>{d.referenceNumber}</span>
                   <button
                     onClick={() => copyRef(d.referenceNumber)}
                     className="p-1 hover:text-white transition-colors"
@@ -152,6 +160,28 @@ export default function PendingDepositsTable({
                   >
                     <Copy className="w-3 h-3" />
                   </button>
+                  {d.referenceNumber.startsWith('http') && (
+                    <a
+                      href={d.referenceNumber}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1 text-amber-400 hover:text-amber-300 transition-colors"
+                      title="Open Link"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                  {/^[0-9a-fA-F]{64}$/.test(d.referenceNumber) && (
+                    <a
+                      href={`https://tronscan.org/#/transaction/${d.referenceNumber}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1 text-amber-400 hover:text-amber-300 transition-colors"
+                      title="Verify on Tronscan"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
                 </div>
               </td>
               <td className="py-3.5 px-4 text-gray-400">
