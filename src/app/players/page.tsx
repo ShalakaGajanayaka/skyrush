@@ -158,14 +158,14 @@ export default function PlayersPage() {
                   </td>
                   <td className="py-3.5 px-4">
                     <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-blue-500/10 text-blue-300 border border-blue-500/20">
-                      {u.currency || 'LKR'}
+                      {u.currency || 'USD'}
                     </span>
                   </td>
                   <td className="py-3.5 px-4">
                     <span className="text-sm font-extrabold text-emerald-400 flex items-center gap-1">
                       <Coins className="w-3.5 h-3.5" />
                       <span>
-                        {u.currency || 'LKR'} {Number(u.balance || 0).toFixed(2)}
+                        {u.currency || 'USD'} {Number(u.balance || 0).toFixed(2)}
                       </span>
                     </span>
                   </td>
@@ -179,7 +179,7 @@ export default function PlayersPage() {
                     <div className="flex items-center gap-1">
                       <Trophy className="w-3 h-3" />
                       <span>
-                        {u.currency || 'LKR'} {Number(u.totalWon || 0).toFixed(2)}
+                        {u.currency || 'USD'} {Number(u.totalWon || 0).toFixed(2)}
                       </span>
                     </div>
                   </td>
@@ -225,7 +225,7 @@ export default function PlayersPage() {
         onClose={() => setIsModalOpen(false)}
         prefillUsername={selectedUser}
         onCreditSuccess={(user, amount) => {
-          showToast(`✅ Successfully credited ${amount} to ${user?.username || selectedUser}!`);
+          showToast(`✅ Successfully credited $${Number(amount).toFixed(2)} USD to ${user?.username || selectedUser}!`);
           loadData(searchTerm);
         }}
       />

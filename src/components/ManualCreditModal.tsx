@@ -109,17 +109,17 @@ export default function ManualCreditModal({
 
           <div>
             <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-              Credit Amount (LKR)
+              Credit Amount ($ USD)
             </label>
             <div className="relative">
               <DollarSign className="w-4 h-4 text-emerald-400 absolute left-3.5 top-3" />
               <input
                 type="number"
-                min="1"
+                min="0.1"
                 step="any"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                placeholder="e.g. 1000"
+                placeholder="e.g. 50"
                 required
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white placeholder-gray-500 text-xs font-bold focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
               />

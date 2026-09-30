@@ -140,7 +140,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         onClose={() => setIsManualCreditOpen(false)}
         prefillUsername={prefillUser}
         onCreditSuccess={(user, amount) => {
-          showToast(`✅ Successfully credited ${amount} to ${user?.username || prefillUser}!`);
+          showToast(`✅ Successfully credited $${Number(amount).toFixed(2)} USD to ${user?.username || prefillUser}!`);
           loadPendingCount();
         }}
       />

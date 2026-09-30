@@ -72,7 +72,7 @@ export default function MarketingModal({
     setError(null);
     try {
       const res = await manualCredit(user.username, amt, 'Promotional Marketing Balance Injection');
-      setStatusNotice(`Successfully credited ${user.currency || 'LKR'} ${amt.toLocaleString()} to ${user.username}!`);
+      setStatusNotice(`Successfully credited $${amt.toLocaleString()} USD to ${user.username}!`);
       if (res.user) {
         onSuccess(res.user);
       }
@@ -119,7 +119,7 @@ export default function MarketingModal({
             <span className="text-gray-400 block text-[11px]">Current Wallet Balance</span>
             <span className="text-sm font-black text-emerald-400 flex items-center gap-1 mt-0.5">
               <Coins className="w-4 h-4" />
-              <span>{user.currency || 'LKR'} {Number(user.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              <span>{user.currency || 'USD'} {Number(user.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </span>
           </div>
           <div className="text-right">
@@ -212,14 +212,14 @@ export default function MarketingModal({
         <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-3">
           <label className="text-[11px] font-bold text-gray-300 flex items-center gap-1.5">
             <Coins className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Inject Promotional Balance (Demo Play Funds)</span>
+            <span>Inject Promotional Balance in USD ($) (Demo Play Funds)</span>
           </label>
           <div className="flex items-center gap-2">
             <input
               type="number"
               value={promoAmount}
               onChange={(e) => setPromoAmount(e.target.value)}
-              placeholder="e.g. 100000"
+              placeholder="e.g. 500"
               className="flex-1 px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
             />
             <button
@@ -232,7 +232,7 @@ export default function MarketingModal({
             </button>
           </div>
           <div className="flex items-center gap-1.5 pt-1">
-            {[25000, 50000, 100000, 500000].map((amt) => (
+            {[50, 100, 250, 500].map((amt) => (
               <button
                 key={amt}
                 type="button"
@@ -240,7 +240,7 @@ export default function MarketingModal({
                 disabled={creditLoading}
                 className="px-2 py-1 rounded-lg bg-white/[0.03] hover:bg-white/[0.08] text-[10px] font-mono text-gray-300 border border-white/5 transition-all"
               >
-                +{(amt / 1000)}k
+                +${amt}
               </button>
             ))}
           </div>

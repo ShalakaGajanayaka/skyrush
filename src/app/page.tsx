@@ -136,12 +136,12 @@ export default function DashboardPage() {
     }
 
     const currentPool = stats.globalPool || 0;
-    if (poolActionTab === 'PROFIT_SKIM' && currentPool - amt < 5000) {
-      showToast(`Cannot skim: Resulting pool (LKR ${(currentPool - amt).toLocaleString()}) must stay at or above safety floor LKR 5,000`, true);
+    if (poolActionTab === 'PROFIT_SKIM' && currentPool - amt < 20) {
+      showToast(`Cannot skim: Resulting pool ($ ${(currentPool - amt).toLocaleString()} USD) must stay at or above safety floor $20.00 USD`, true);
       return;
     }
-    if (poolActionTab === 'SET_TARGET' && amt < 5000) {
-      showToast('Target pool must be at least LKR 5,000', true);
+    if (poolActionTab === 'SET_TARGET' && amt < 20) {
+      showToast('Target pool must be at least $20.00 USD', true);
       return;
     }
 
@@ -154,9 +154,9 @@ export default function DashboardPage() {
         adminUser: 'Super Admin',
       });
       if (res.pending) {
-        showToast(`Scheduled: Global Pool will update to LKR ${(res.target ?? amt).toLocaleString()} on Next Round ✈️`);
+        showToast(`Scheduled: Global Pool will update to $ ${(res.target ?? amt).toLocaleString()} USD on Next Round ✈️`);
       } else {
-        showToast(`Success: Global Pool buffer adjusted to LKR ${res.globalPool.toLocaleString()}`);
+        showToast(`Success: Global Pool buffer adjusted to $ ${res.globalPool.toLocaleString()} USD`);
       }
       setIsPoolModalOpen(false);
       loadData();
@@ -209,9 +209,9 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
           title="Net House Profit"
-          value={`LKR ${(stats.companyNetProfit || 0).toLocaleString(undefined, {
+          value={`$ ${(stats.companyNetProfit || 0).toLocaleString(undefined, {
             minimumFractionDigits: 2,
-          })}`}
+          })} USD`}
           subtitle="Realized revenue: Deposits - Payouts - Balances"
           icon={DollarSign}
           variant="emerald"
@@ -219,12 +219,12 @@ export default function DashboardPage() {
         />
         <MetricCard
           title="Global Pool"
-          value={`LKR ${(stats.globalPool || 0).toLocaleString(undefined, {
+          value={`$ ${(stats.globalPool || 0).toLocaleString(undefined, {
             minimumFractionDigits: 2,
-          })}`}
+          })} USD`}
           subtitle={
             stats.pendingGlobalPool
-              ? `⏳ Staged Next Round: LKR ${stats.pendingGlobalPool.toLocaleString()}`
+              ? `⏳ Staged Next Round: $ ${stats.pendingGlobalPool.toLocaleString()} USD`
               : "Active liability buffer in Redis"
           }
           icon={Coins}
@@ -233,18 +233,18 @@ export default function DashboardPage() {
         />
         <MetricCard
           title="Deposited Volume"
-          value={`LKR ${(stats.totalDepositedAmount || 0).toLocaleString(undefined, {
+          value={`$ ${(stats.totalDepositedAmount || 0).toLocaleString(undefined, {
             minimumFractionDigits: 2,
-          })}`}
+          })} USD`}
           subtitle="Total lifetime volume"
           icon={TrendingUp}
           variant="blue"
         />
         <MetricCard
           title="Circulating Wallets"
-          value={`LKR ${(stats.totalSystemBalance || 0).toLocaleString(undefined, {
+          value={`$ ${(stats.totalSystemBalance || 0).toLocaleString(undefined, {
             minimumFractionDigits: 2,
-          })}`}
+          })} USD`}
           subtitle="Active player balance"
           icon={Wallet}
           variant="purple"
@@ -276,9 +276,9 @@ export default function DashboardPage() {
         />
         <MetricCard
           title="Paid Withdrawals"
-          value={`LKR ${(stats.totalWithdrawnAmount || 0).toLocaleString(undefined, {
+          value={`$ ${(stats.totalWithdrawnAmount || 0).toLocaleString(undefined, {
             minimumFractionDigits: 2,
-          })}`}
+          })} USD`}
           subtitle={`${stats.paidWithdrawals || 0} payouts sent`}
           icon={Wallet}
           variant="blue"
@@ -401,10 +401,10 @@ export default function DashboardPage() {
                     Current Active Buffer (In Redis)
                   </span>
                   <div className="text-2xl font-black text-white mt-0.5 flex flex-wrap items-center gap-2">
-                    <span>LKR {(stats.globalPool || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    <span>$ {(stats.globalPool || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })} USD</span>
                     {stats.pendingGlobalPool && (
                       <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse">
-                        ⏳ Next Round: LKR {stats.pendingGlobalPool.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        ⏳ Next Round: $ {stats.pendingGlobalPool.toLocaleString(undefined, { minimumFractionDigits: 2 })} USD
                       </span>
                     )}
                   </div>
@@ -414,7 +414,7 @@ export default function DashboardPage() {
                     Safety Floor Limit
                   </span>
                   <div className="text-xs font-mono font-bold text-emerald-400 mt-1">
-                    Min LKR 5,000.00
+                    Min $20.00 USD
                   </div>
                 </div>
               </div>
@@ -425,9 +425,9 @@ export default function DashboardPage() {
                 <span>
                   Current buffer safely supports up to{' '}
                   <strong className="text-amber-400">
-                    {((stats.globalPool || 0) / 500).toFixed(1)}x multiplier
+                    {((stats.globalPool || 0) / 2).toFixed(1)}x multiplier
                   </strong>{' '}
-                  on a LKR 500 single bet before triggering dynamic liability crash.
+                  on a $2.00 USD single bet before triggering dynamic liability crash.
                 </span>
               </div>
             </div>
@@ -489,17 +489,17 @@ export default function DashboardPage() {
               {poolActionTab === 'TOP_UP' && (
                 <div>
                   <span className="block text-[11px] font-semibold text-gray-400 mb-2">
-                    Quick Inject Presets:
+                    Quick Inject Presets ($ USD):
                   </span>
                   <div className="grid grid-cols-4 gap-2">
-                    {[10000, 25000, 50000, 100000].map((preset) => (
+                    {[25, 50, 100, 250].map((preset) => (
                       <button
                         key={preset}
                         type="button"
                         onClick={() => setPoolInputAmount(preset.toString())}
                         className="py-1.5 px-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-emerald-400 text-xs font-mono font-bold transition-colors cursor-pointer"
                       >
-                        +LKR {(preset / 1000).toFixed(0)}k
+                        +${preset}
                       </button>
                     ))}
                   </div>
@@ -509,17 +509,17 @@ export default function DashboardPage() {
               {poolActionTab === 'PROFIT_SKIM' && (
                 <div>
                   <span className="block text-[11px] font-semibold text-gray-400 mb-2">
-                    Quick Skim Presets:
+                    Quick Skim Presets ($ USD):
                   </span>
                   <div className="grid grid-cols-4 gap-2">
-                    {[5000, 10000, 25000, 50000].map((preset) => (
+                    {[10, 25, 50, 100].map((preset) => (
                       <button
                         key={preset}
                         type="button"
                         onClick={() => setPoolInputAmount(preset.toString())}
                         className="py-1.5 px-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-amber-400 text-xs font-mono font-bold transition-colors cursor-pointer"
                       >
-                        -LKR {(preset / 1000).toFixed(0)}k
+                        -${preset}
                       </button>
                     ))}
                   </div>
@@ -529,18 +529,18 @@ export default function DashboardPage() {
               {/* Amount Input */}
               <div>
                 <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-                  {poolActionTab === 'TOP_UP' && 'Amount to Add (LKR)'}
-                  {poolActionTab === 'PROFIT_SKIM' && 'Amount to Skim / Extract (LKR)'}
-                  {poolActionTab === 'SET_TARGET' && 'New Target Pool Buffer (LKR)'}
+                  {poolActionTab === 'TOP_UP' && 'Amount to Add ($ USD)'}
+                  {poolActionTab === 'PROFIT_SKIM' && 'Amount to Skim / Extract ($ USD)'}
+                  {poolActionTab === 'SET_TARGET' && 'New Target Pool Buffer ($ USD)'}
                 </label>
                 <input
                   type="number"
                   step="0.01"
-                  min={poolActionTab === 'SET_TARGET' ? 5000 : 1}
+                  min={poolActionTab === 'SET_TARGET' ? 20 : 1}
                   value={poolInputAmount}
                   onChange={(e) => setPoolInputAmount(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono text-sm focus:outline-none focus:border-amber-400"
-                  placeholder={poolActionTab === 'SET_TARGET' ? 'Min 5000' : 'e.g. 25000'}
+                  placeholder={poolActionTab === 'SET_TARGET' ? 'Min 20' : 'e.g. 50'}
                   required
                 />
               </div>
@@ -563,13 +563,13 @@ export default function DashboardPage() {
               {numInput > 0 && (
                 <div
                   className={`p-3 rounded-xl border text-xs flex items-center justify-between ${
-                    previewTarget < 5000
+                    previewTarget < 20
                       ? 'bg-red-500/10 border-red-500/30 text-red-300'
                       : 'bg-white/[0.03] border-white/10 text-gray-300'
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    {previewTarget < 5000 ? (
+                    {previewTarget < 20 ? (
                       <AlertTriangle className="w-4 h-4 text-red-400" />
                     ) : (
                       <TrendingUp className="w-4 h-4 text-amber-400" />
@@ -577,7 +577,7 @@ export default function DashboardPage() {
                     <span>Resulting Buffer:</span>
                   </div>
                   <span className="font-mono font-bold text-white text-sm">
-                    LKR {previewTarget.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    $ {previewTarget.toLocaleString(undefined, { minimumFractionDigits: 2 })} USD
                   </span>
                 </div>
               )}
@@ -647,7 +647,7 @@ export default function DashboardPage() {
                           }`}
                         >
                           {Number(log.delta) >= 0 ? '+' : ''}
-                          LKR {Number(log.delta).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          $ {Number(log.delta).toLocaleString(undefined, { minimumFractionDigits: 2 })} USD
                         </div>
                         <div className="text-[9px] text-gray-500">
                           {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
