@@ -18,6 +18,8 @@ import {
   Check,
   RotateCcw,
   Coins,
+  Sparkles,
+  Video,
 } from 'lucide-react';
 
 interface WithdrawalsTableProps {
@@ -235,7 +237,15 @@ export default function WithdrawalsTable({
                 >
                   {/* Player info */}
                   <td className="py-4 px-4">
-                    <div className="font-bold text-white text-sm">{req.username}</div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-white text-sm">{req.username}</span>
+                      {req.isMarketing && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded font-extrabold text-[9px] bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                          <Video className="w-2.5 h-2.5 text-purple-400" />
+                          <span>PROMO</span>
+                        </span>
+                      )}
+                    </div>
                     <div className="text-[11px] text-gray-400">{req.email || req.userId.slice(0, 8)}</div>
                     <div className="text-[10px] font-mono text-gray-400 mt-0.5">
                       ID: {req.id.slice(0, 8)}
@@ -327,12 +337,25 @@ export default function WithdrawalsTable({
                         <button
                           onClick={() => {
                             setConfirmModal({ type: 'approve', withdrawal: req });
-                            setAdminNote('');
+                            setAdminNote(req.isMarketing ? 'Simulated Demo Payout for Marketing Video' : '');
                           }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold rounded-lg text-xs shadow-md shadow-emerald-600/20 transition-all"
+                          className={`flex items-center gap-1.5 px-3 py-1.5 active:scale-95 font-bold rounded-lg text-xs transition-all ${
+                            req.isMarketing
+                              ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-md shadow-purple-600/20'
+                              : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20'
+                          }`}
                         >
-                          <CheckCircle className="w-3.5 h-3.5" />
-                          <span>Mark as Paid</span>
+                          {req.isMarketing ? (
+                            <>
+                              <Sparkles className="w-3.5 h-3.5 text-purple-200" />
+                              <span>Simulate Payout</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              <span>Mark as Paid</span>
+                            </>
+                          )}
                         </button>
 
                         <button
@@ -394,6 +417,21 @@ export default function WithdrawalsTable({
               {renderPayoutDetails(confirmModal.withdrawal.payoutDetails, confirmModal.withdrawal.method)}
             </div>
 
+            {/* Promotional Warning Shield if isMarketing */}
+            {confirmModal.withdrawal.isMarketing && confirmModal.type === 'approve' && (
+              <div className="p-3.5 bg-purple-500/15 border border-purple-500/30 rounded-xl flex items-start gap-2.5 text-xs text-purple-200">
+                <Sparkles className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <div className="font-extrabold text-purple-300 uppercase tracking-wider text-[11px]">
+                    ⛔ Streamer / Demo Promotional Payout
+                  </div>
+                  <div className="text-[11px] text-purple-200/90 leading-relaxed">
+                    <strong>DO NOT send real USDT or bank transfers!</strong> Clicking below simulates a completed payout on the streamer&apos;s app for video recording without spending any company funds.
+                  </div>
+                </div>
+              </div>
+            )}
+
             {confirmModal.type === 'approve' ? (
               <div>
                 <label className="block text-xs font-semibold text-gray-300 mb-1.5">
@@ -443,10 +481,14 @@ export default function WithdrawalsTable({
                   type="button"
                   onClick={handleApprove}
                   disabled={processing}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 transition-all disabled:opacity-50"
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl active:scale-95 text-white text-xs font-bold transition-all disabled:opacity-50 ${
+                    confirmModal.withdrawal.isMarketing
+                      ? 'bg-purple-600 hover:bg-purple-500 shadow-lg shadow-purple-600/30'
+                      : 'bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-600/30'
+                  }`}
                 >
                   {processing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>Confirm Paid</span>
+                  <span>{confirmModal.withdrawal.isMarketing ? 'Simulate Demo Payout' : 'Confirm Paid'}</span>
                 </button>
               ) : (
                 <button

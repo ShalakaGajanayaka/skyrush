@@ -28,6 +28,7 @@ export interface WithdrawalRequest {
   method: string;
   payoutDetails: string;
   status: WithdrawalStatus;
+  isMarketing?: boolean;
   adminNote?: string;
   processedBy?: string;
   processedAt?: string;
