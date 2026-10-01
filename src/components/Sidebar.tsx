@@ -132,7 +132,20 @@ export default function Sidebar({ pendingCount = 0, pendingWithdrawalCount = 0, 
           Port: 3000 (WebSocket Active)
         </div>
         <button 
-          onClick={() => {
+          onClick={async () => {
+            const token = localStorage.getItem('admin_token');
+            if (token) {
+              try {
+                const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+                await fetch(`${API_BASE}/admin/api/logout`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                  },
+                });
+              } catch (_) {}
+            }
             localStorage.removeItem('admin_token');
             window.location.reload();
           }}
