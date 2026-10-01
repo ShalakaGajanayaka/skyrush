@@ -526,6 +526,26 @@ export default function DashboardPage() {
                 </div>
               )}
 
+              {poolActionTab === 'SET_TARGET' && (
+                <div>
+                  <span className="block text-[11px] font-semibold text-gray-400 mb-2">
+                    Target Presets ($ USD):
+                  </span>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[100, 500, 1000, 5000].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setPoolInputAmount(preset.toString())}
+                        className="py-1.5 px-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-blue-400 text-xs font-mono font-bold transition-colors cursor-pointer"
+                      >
+                        ${preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Amount Input */}
               <div>
                 <label className="block text-xs font-semibold text-gray-300 mb-1.5">
@@ -593,7 +613,7 @@ export default function DashboardPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmittingPool || (numInput > 0 && previewTarget < 5000)}
+                  disabled={isSubmittingPool || !poolInputAmount || numInput <= 0 || previewTarget < 20}
                   className="px-6 py-2 rounded-xl text-xs font-bold bg-amber-500 text-black hover:bg-amber-400 transition-colors disabled:opacity-40 cursor-pointer shadow-lg shadow-amber-500/20"
                 >
                   {isSubmittingPool ? 'Updating Redis...' : 'Confirm & Save'}
