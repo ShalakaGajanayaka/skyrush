@@ -81,7 +81,7 @@ export default function BalanceAdjustmentModal({
         reason: reason.trim() || 'Administrative Balance Adjustment',
       });
 
-      onSuccess(res.user, `Successfully updated ${user.username}'s balance to ${user.currency || 'USD'} ${res.newBalance.toFixed(2)}`);
+      onSuccess(res.user, `Successfully updated ${user.username}'s balance to $${res.newBalance.toFixed(2)} USD`);
       onClose();
     } catch (err: any) {
       setError(err?.message || 'Failed to adjust balance');
@@ -120,20 +120,20 @@ export default function BalanceAdjustmentModal({
         <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-between">
           <div>
             <span className="text-[11px] text-gray-400 block font-semibold">Current Wallet Balance</span>
-            <span className="text-base font-extrabold text-white flex items-center gap-1.5 mt-0.5">
+            <span className="text-base font-extrabold text-white flex items-center gap-1.5 mt-0.5 font-mono">
               <Coins className="w-4 h-4 text-amber-400" />
-              <span>{user.currency || 'USD'} {currentBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              <span>${currentBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })} USD</span>
             </span>
           </div>
           <div className="text-right">
             <span className="text-[11px] text-gray-400 block font-semibold">After Adjustment</span>
-            <span className={`text-base font-extrabold flex items-center justify-end gap-1 mt-0.5 ${
+            <span className={`text-base font-extrabold flex items-center justify-end gap-1 mt-0.5 font-mono ${
               previewBalance === 0 ? 'text-rose-400' : 'text-emerald-400'
             }`}>
-              <span>{user.currency || 'USD'} {previewBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              <span>${previewBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })} USD</span>
             </span>
-            <span className={`text-[10px] font-bold block ${delta < 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
-              {delta >= 0 ? `+${delta.toFixed(2)}` : delta.toFixed(2)}
+            <span className={`text-[10px] font-bold block font-mono ${delta < 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+              {delta >= 0 ? `+$${delta.toFixed(2)} USD` : `-$${Math.abs(delta).toFixed(2)} USD`}
             </span>
           </div>
         </div>
@@ -187,7 +187,7 @@ export default function BalanceAdjustmentModal({
                 <span>Balance Wipe Warning</span>
               </div>
               <p className="text-[11px] text-gray-300 leading-relaxed">
-                This will clear <span className="font-bold text-white">{user.username}</span>&apos;s current balance of <span className="font-mono text-rose-300 font-bold">{user.currency || 'USD'} {currentBalance.toFixed(2)}</span> down to <span className="font-bold text-white">0.00</span>. This will immediately improve Net House Profit.
+                This will clear <span className="font-bold text-white">{user.username}</span>&apos;s current balance of <span className="font-mono text-rose-300 font-bold">${currentBalance.toFixed(2)} USD</span> down to <span className="font-bold text-white">$0.00 USD</span>. This will immediately improve Net House Profit.
               </p>
               <label className="flex items-center gap-2 pt-2 cursor-pointer select-none">
                 <input

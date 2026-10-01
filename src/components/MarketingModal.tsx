@@ -117,9 +117,9 @@ export default function MarketingModal({
         <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-between text-xs">
           <div>
             <span className="text-gray-400 block text-[11px]">Current Wallet Balance</span>
-            <span className="text-sm font-black text-emerald-400 flex items-center gap-1 mt-0.5">
+            <span className="text-sm font-black text-emerald-400 flex items-center gap-1 mt-0.5 font-mono">
               <Coins className="w-4 h-4" />
-              <span>{user.currency || 'USD'} {Number(user.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              <span>${Number(user.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })} USD</span>
             </span>
           </div>
           <div className="text-right">

@@ -108,17 +108,16 @@ export default function PlayersPage() {
               <th className="py-3 px-4">Player Username</th>
               <th className="py-3 px-4">Contact / Identifier</th>
               <th className="py-3 px-4">Role / Tag</th>
-              <th className="py-3 px-4">Base Currency</th>
-              <th className="py-3 px-4">Wallet Balance</th>
+              <th className="py-3 px-4">Wallet Balance ($ USD)</th>
               <th className="py-3 px-4">Games Played</th>
-              <th className="py-3 px-4">Total Won</th>
+              <th className="py-3 px-4">Total Won ($ USD)</th>
               <th className="py-3 px-4 text-right">Quick Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/[0.03]">
             {users.length === 0 ? (
               <tr>
-                <td colSpan={8} className="py-12 text-center text-gray-500">
+                <td colSpan={7} className="py-12 text-center text-gray-500">
                   No players found matching &quot;{searchTerm}&quot;.
                 </td>
               </tr>
@@ -157,15 +156,10 @@ export default function PlayersPage() {
                     </div>
                   </td>
                   <td className="py-3.5 px-4">
-                    <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-blue-500/10 text-blue-300 border border-blue-500/20">
-                      {u.currency || 'USD'}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <span className="text-sm font-extrabold text-emerald-400 flex items-center gap-1">
+                    <span className="text-sm font-extrabold text-emerald-400 flex items-center gap-1 font-mono">
                       <Coins className="w-3.5 h-3.5" />
                       <span>
-                        {u.currency || 'USD'} {Number(u.balance || 0).toFixed(2)}
+                        ${Number(u.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
                       </span>
                     </span>
                   </td>
@@ -176,10 +170,10 @@ export default function PlayersPage() {
                     </div>
                   </td>
                   <td className="py-3.5 px-4 font-bold text-amber-400">
-                    <div className="flex items-center gap-1">
-                      <Trophy className="w-3 h-3" />
+                    <div className="flex items-center gap-1 font-mono">
+                      <Trophy className="w-3 h-3 text-amber-400" />
                       <span>
-                        {u.currency || 'USD'} {Number(u.totalWon || 0).toFixed(2)}
+                        ${Number(u.totalWon || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
                       </span>
                     </div>
                   </td>
