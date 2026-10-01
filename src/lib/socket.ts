@@ -35,6 +35,18 @@ export function useAdminSocket(
   useEffect(() => {
     const s = getSocket();
 
+    const joinAdminRoom = () => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+      if (token) {
+        s.emit('subscribeAdmin', { token });
+      }
+    };
+
+    if (s.connected) {
+      joinAdminRoom();
+    }
+    s.on('connect', joinAdminRoom);
+
     const handleNewDeposit = (data: any) => {
       if (onNewDepositRef.current) {
         onNewDepositRef.current(data?.deposit || data);
@@ -58,6 +70,7 @@ export function useAdminSocket(
     s.on('globalPoolUpdated', handlePoolUpdated);
 
     return () => {
+      s.off('connect', joinAdminRoom);
       s.off('newDepositSubmitted', handleNewDeposit);
       s.off('newWithdrawalSubmitted', handleNewWithdrawal);
       s.off('globalPoolUpdated', handlePoolUpdated);
