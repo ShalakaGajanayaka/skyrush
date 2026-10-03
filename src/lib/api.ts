@@ -212,3 +212,42 @@ export async function adjustUserBalance(
   if (!res.ok) throw new Error(data.message || 'Failed to adjust balance');
   return data;
 }
+
+export interface MarketingRadarData {
+  room: string;
+  roundNumber: number;
+  status: 'waiting' | 'playing' | 'crashed';
+  countdown: number;
+  targetStartTime: number;
+  startTime: number;
+  currentMultiplier: number;
+  crashPoint: number;
+  safeCashoutTarget: number;
+  estFlightDuration: number;
+  elapsedSeconds: number;
+  remainingSeconds: number;
+  activeAutoWinBetsCount: number;
+  activeBetsCount: number;
+  serverTime: number;
+}
+
+export async function fetchMarketingRadarPreview(key?: string): Promise<MarketingRadarData> {
+  const query = key ? `?key=${encodeURIComponent(key)}` : '';
+  const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`${API_BASE}/admin/api/marketing/preview${query}`, {
+    headers,
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Unauthorized or failed to fetch radar telemetry');
+  }
+  const json = await res.json();
+  return json.data;
+}
+

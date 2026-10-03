@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import ManualCreditModal from './ManualCreditModal';
@@ -9,6 +10,8 @@ import { fetchStats } from '@/lib/api';
 import Login from './Login';
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isStreamerHud = pathname === '/streamer-hud';
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [pendingWithdrawalCount, setPendingWithdrawalCount] = useState(0);
@@ -102,8 +105,12 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     setIsManualCreditOpen(true);
   };
 
-  if (isAuthenticated === null) {
+  if (isAuthenticated === null && !isStreamerHud) {
     return <div className="min-h-screen bg-[#080c14] flex items-center justify-center text-white"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div></div>;
+  }
+
+  if (!isAuthenticated && isStreamerHud) {
+    return <main className="min-h-screen bg-[#080c14] text-gray-100">{children}</main>;
   }
 
   if (!isAuthenticated) {

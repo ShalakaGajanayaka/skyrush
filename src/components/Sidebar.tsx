@@ -57,6 +57,12 @@ export default function Sidebar({ pendingCount = 0, pendingWithdrawalCount = 0, 
       href: '/channels',
       icon: CreditCard,
     },
+    {
+      label: 'Streamer Radar HUD',
+      href: '/streamer-hud',
+      icon: Radio,
+      badge: 'RADAR',
+    },
   ];
 
   return (
