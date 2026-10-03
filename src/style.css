@@ -117,58 +117,6 @@ body {
   box-shadow: 0 0 6px currentColor;
 }
 
-/* History Bar in Header */
-.header-center {
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-}
-
-.history-ribbon {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding: 4px 0;
-}
-.history-ribbon::-webkit-scrollbar {
-  display: none;
-}
-
-.history-pill {
-  padding: 3px 9px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: transform 0.15s, opacity 0.15s;
-}
-.history-pill:hover {
-  transform: scale(1.08);
-}
-
-.pill-blue {
-  background: rgba(56, 189, 248, 0.15);
-  color: #38bdf8;
-  border: 1px solid rgba(56, 189, 248, 0.3);
-}
-
-.pill-purple {
-  background: rgba(168, 85, 247, 0.15);
-  color: #c084fc;
-  border: 1px solid rgba(168, 85, 247, 0.35);
-}
-
-.pill-gold {
-  background: rgba(245, 158, 11, 0.2);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.5);
-  box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
-}
-
 .header-right {
   display: flex;
   align-items: center;

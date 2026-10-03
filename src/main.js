@@ -1,7 +1,6 @@
 import { FlightCanvas } from './engine/flight-canvas.js';
 import { SocketClient, socketClient } from './network/socket-client.js';
 import { soundManager } from './audio/audio-manager.js';
-import { HistoryBar } from './ui/history-bar.js';
 import { BetController } from './ui/bet-controller.js';
 import { LiveBetsFeed } from './ui/live-bets.js';
 import { ProvablyFairModal } from './ui/provably-fair-modal.js';
@@ -31,16 +30,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const pfModal = new ProvablyFairModal();
   document.getElementById('btnProvablyFair').addEventListener('click', () => {
     pfModal.show(lastProvablyFairRound);
-  });
-
-  // 4. Initialize History Ribbon
-  const ribbonEl = document.getElementById('historyRibbon');
-  const historyBar = new HistoryBar(ribbonEl, (item) => {
-    pfModal.show(item.roundInfo || {
-      roundNumber: 'Historical',
-      multiplier: item.multiplier,
-      serverSeedHash: 'Verified via cryptographic ledger',
-    });
   });
 
   // 5. Initialize Live Bets Sidebar
@@ -136,9 +125,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       flightCanvas.setCrashedState(finalCrash);
       betCtrl1.onRoundCrashed(finalCrash);
       betCtrl2.onRoundCrashed(finalCrash);
-
-      // Record to history ribbon
-      historyBar.addMultiplier(finalCrash, provablyFair);
     }
   });
 
