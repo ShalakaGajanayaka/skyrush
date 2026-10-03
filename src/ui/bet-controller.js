@@ -1,0 +1,303 @@
+import { soundManager } from '../audio/audio-manager.js';
+import confetti from 'canvas-confetti';
+
+export class BetController {
+  constructor(panelElement, panelIndex, socketClient, getBalanceCallback, setBalanceCallback) {
+    this.panel = panelElement;
+    this.index = panelIndex; // 1 or 2
+    this.socket = socketClient;
+    this.getBalance = getBalanceCallback;
+    this.setBalance = setBalanceCallback;
+
+    // Bet configuration
+    this.amount = 10.0;
+    this.minBet = 1.0;
+    this.maxBet = 500.0;
+
+    // States: 'idle' | 'queued' | 'placed' | 'cashed_out'
+    this.state = 'idle';
+    this.activeBetId = null;
+    this.placedAmount = 0;
+
+    // Auto features
+    this.autoBet = false;
+    this.autoCashout = false;
+    this.autoCashoutMultiplier = 2.0;
+
+    this.initUI();
+  }
+
+  initUI() {
+    this.panel.innerHTML = `
+      <div class="bet-panel-inner">
+        <!-- Controls Header: Manual vs Auto Mode -->
+        <div class="bet-panel-tabs">
+          <button class="tab-btn active" data-tab="bet">Bet</button>
+          <button class="tab-btn" data-tab="auto">Auto</button>
+        </div>
+
+        <div class="bet-panel-main">
+          <!-- Left Column: Steppers & Quick Chips -->
+          <div class="bet-controls-col">
+            <div class="bet-stepper-box">
+              <button class="stepper-btn minus-btn">−</button>
+              <div class="bet-input-wrapper">
+                <span class="currency-symbol">$</span>
+                <input type="number" class="bet-amount-input" value="${this.amount.toFixed(2)}" min="1" max="500" step="1">
+              </div>
+              <button class="stepper-btn plus-btn">+</button>
+            </div>
+
+            <!-- Quick Chips: Pure USD [1, 2, 5, 10, 20, 50, 100, 200, 500] -->
+            <div class="quick-chips-row">
+              <button class="chip-btn" data-val="1">1</button>
+              <button class="chip-btn" data-val="2">2</button>
+              <button class="chip-btn" data-val="5">5</button>
+              <button class="chip-btn active" data-val="10">10</button>
+              <button class="chip-btn" data-val="20">20</button>
+              <button class="chip-btn" data-val="50">50</button>
+              <button class="chip-btn" data-val="100">100</button>
+              <button class="chip-btn" data-val="200">200</button>
+              <button class="chip-btn" data-val="500">500</button>
+            </div>
+
+            <!-- Auto Cashout Row (Hidden unless Auto tab or toggled) -->
+            <div class="auto-settings-row">
+              <label class="auto-toggle-label">
+                <input type="checkbox" class="auto-cashout-checkbox">
+                <span>Auto Cash Out</span>
+              </label>
+              <div class="auto-mult-input-wrapper">
+                <input type="number" class="auto-mult-input" value="2.00" min="1.01" max="1000" step="0.1">
+                <span class="mult-x">x</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Prominent Action Button -->
+          <div class="bet-action-col">
+            <button class="main-action-btn btn-idle">
+              <span class="action-title">BET</span>
+              <span class="action-subtitle">$${this.amount.toFixed(2)} USD</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Cache elements
+    this.inputAmount = this.panel.querySelector('.bet-amount-input');
+    this.btnAction = this.panel.querySelector('.main-action-btn');
+    this.btnTitle = this.panel.querySelector('.action-title');
+    this.btnSub = this.panel.querySelector('.action-subtitle');
+    this.btnMinus = this.panel.querySelector('.minus-btn');
+    this.btnPlus = this.panel.querySelector('.plus-btn');
+    this.chips = this.panel.querySelectorAll('.chip-btn');
+    this.chkAutoCashout = this.panel.querySelector('.auto-cashout-checkbox');
+    this.inputAutoMult = this.panel.querySelector('.auto-mult-input');
+
+    this.bindEvents();
+  }
+
+  bindEvents() {
+    // Steppers
+    this.btnMinus.addEventListener('click', () => {
+      this.setAmount(Math.max(this.minBet, this.amount - 1));
+    });
+
+    this.btnPlus.addEventListener('click', () => {
+      this.setAmount(Math.min(this.maxBet, this.amount + 1));
+    });
+
+    // Manual typing
+    this.inputAmount.addEventListener('change', (e) => {
+      let val = parseFloat(e.target.value) || this.minBet;
+      val = Math.max(this.minBet, Math.min(this.maxBet, val));
+      this.setAmount(val);
+    });
+
+    // Quick Chips
+    this.chips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const val = parseFloat(chip.dataset.val);
+        this.setAmount(val);
+      });
+    });
+
+    // Auto cashout toggle
+    this.chkAutoCashout.addEventListener('change', (e) => {
+      this.autoCashout = e.target.checked;
+    });
+
+    this.inputAutoMult.addEventListener('change', (e) => {
+      let val = parseFloat(e.target.value) || 2.0;
+      val = Math.max(1.01, val);
+      this.autoCashoutMultiplier = val;
+      e.target.value = val.toFixed(2);
+    });
+
+    // Action button click
+    this.btnAction.addEventListener('click', () => this.handleActionClick());
+  }
+
+  setAmount(val) {
+    this.amount = parseFloat(val.toFixed(2));
+    this.inputAmount.value = this.amount.toFixed(2);
+    this.chips.forEach(c => {
+      if (parseFloat(c.dataset.val) === this.amount) {
+        c.classList.add('active');
+      } else {
+        c.classList.remove('active');
+      }
+    });
+
+    if (this.state === 'idle') {
+      this.btnSub.textContent = `$${this.amount.toFixed(2)} USD`;
+    }
+  }
+
+  async handleActionClick() {
+    if (this.state === 'idle') {
+      // Check user balance
+      const currentBalance = this.getBalance();
+      if (currentBalance < this.amount) {
+        alert(`Insufficient balance. Your balance is $${currentBalance.toFixed(2)} USD.`);
+        return;
+      }
+
+      // Transition to Queued / Placed
+      this.placedAmount = this.amount;
+      this.state = 'queued';
+      this.updateButtonView();
+
+      const betId = `bet_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+      this.activeBetId = betId;
+
+      const res = await this.socket.placeBet({
+        id: betId,
+        amount: this.placedAmount,
+        betIndex: this.index,
+        autoCashout: this.autoCashout ? this.autoCashoutMultiplier : null,
+      });
+
+      if (!res || res.success === false) {
+        alert(res?.message || 'Failed to place bet');
+        this.state = 'idle';
+        this.activeBetId = null;
+        this.updateButtonView();
+      }
+    } else if (this.state === 'queued') {
+      // Cancel queued bet
+      if (this.activeBetId) {
+        await this.socket.cancelBet(this.activeBetId);
+      }
+      this.state = 'idle';
+      this.activeBetId = null;
+      this.updateButtonView();
+    } else if (this.state === 'placed') {
+      // Cashout now!
+      this.triggerCashout();
+    }
+  }
+
+  async triggerCashout(multiplierOverride = null) {
+    if (this.state !== 'placed' || !this.activeBetId) return;
+
+    const mult = multiplierOverride || window.currentFlightMultiplier || 1.0;
+    const winAmount = Number((this.placedAmount * mult).toFixed(2));
+
+    this.state = 'cashed_out';
+    soundManager.playCashoutChime();
+
+    // Trigger celebration confetti
+    try {
+      confetti({
+        particleCount: 50,
+        spread: 60,
+        origin: { y: 0.8 },
+      });
+    } catch (_) {}
+
+    this.btnAction.className = 'main-action-btn btn-won';
+    this.btnTitle.textContent = `WON $${winAmount.toFixed(2)}`;
+    this.btnSub.textContent = `@ ${mult.toFixed(2)}x`;
+
+    const betIdToCash = this.activeBetId;
+    this.activeBetId = null;
+
+    await this.socket.cashOut(betIdToCash, mult);
+  }
+
+  onRoundWaiting(countdown) {
+    if (this.state === 'cashed_out') {
+      this.state = 'idle';
+      this.activeBetId = null;
+      this.updateButtonView();
+    }
+
+    if (this.autoBet && this.state === 'idle') {
+      this.handleActionClick();
+    }
+  }
+
+  onRoundPlaying(startTime) {
+    if (this.state === 'queued') {
+      this.state = 'placed';
+      this.updateButtonView();
+    }
+  }
+
+  onFlightTick(multiplier) {
+    if (this.state === 'placed') {
+      const currentWin = (this.placedAmount * multiplier).toFixed(2);
+      this.btnTitle.textContent = `CASH OUT`;
+      this.btnSub.textContent = `$${currentWin} USD`;
+
+      // Check auto-cashout
+      if (this.autoCashout && multiplier >= this.autoCashoutMultiplier) {
+        this.triggerCashout(multiplier);
+      }
+    }
+  }
+
+  onRoundCrashed(finalMultiplier) {
+    if (this.state === 'placed') {
+      // Player lost
+      this.state = 'idle';
+      this.activeBetId = null;
+      this.btnAction.className = 'main-action-btn btn-lost';
+      this.btnTitle.textContent = 'FLEW AWAY';
+      this.btnSub.textContent = `@ ${finalMultiplier.toFixed(2)}x`;
+
+      setTimeout(() => {
+        if (this.state === 'idle') {
+          this.updateButtonView();
+        }
+      }, 2500);
+    } else if (this.state === 'queued') {
+      // Remains queued for next round
+    } else {
+      this.state = 'idle';
+      this.activeBetId = null;
+      this.updateButtonView();
+    }
+  }
+
+  updateButtonView() {
+    this.btnAction.className = 'main-action-btn';
+
+    if (this.state === 'idle') {
+      this.btnAction.classList.add('btn-idle');
+      this.btnTitle.textContent = 'BET';
+      this.btnSub.textContent = `$${this.amount.toFixed(2)} USD`;
+    } else if (this.state === 'queued') {
+      this.btnAction.classList.add('btn-queued');
+      this.btnTitle.textContent = 'WAITING';
+      this.btnSub.textContent = 'CANCEL';
+    } else if (this.state === 'placed') {
+      this.btnAction.classList.add('btn-cashout');
+      this.btnTitle.textContent = 'CASH OUT';
+      this.btnSub.textContent = `$${this.placedAmount.toFixed(2)} USD`;
+    }
+  }
+}
