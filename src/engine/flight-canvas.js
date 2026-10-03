@@ -272,10 +272,10 @@ export class FlightCanvas {
       this.planeNormX += (targetNormX - this.planeNormX) * dt * 3;
       this.planeNormY += (targetNormY - this.planeNormY) * dt * 3;
 
-      // Natural aerodynamic turbulence & lift float
-      const wobble = Math.sin(currentTimeSec() * 3.5) * 0.012;
+      // Subdued, smooth aerodynamic float (greatly reduced up-down movement)
+      const wobble = Math.sin(currentTimeSec() * 2.0) * 0.0025;
       this.planeNormY += wobble;
-      this.planeAngle = Math.min(26, 12 + progress * 10 + Math.sin(currentTimeSec() * 2) * 2);
+      this.planeAngle = Math.min(24, 12 + progress * 10 + Math.sin(currentTimeSec() * 1.5) * 0.4);
 
       // Aerodynamic engine smoke puff
       if (Math.random() < 0.6) {
@@ -323,9 +323,9 @@ export class FlightCanvas {
         }
       }
     } else if (this.status === 'waiting') {
-      // Resting waiting at runway altitude
+      // Resting waiting at runway altitude (calm & stable)
       this.planeNormX = 0.14;
-      this.planeNormY = 0.16 + Math.sin(currentTimeSec() * 2) * 0.008;
+      this.planeNormY = 0.16 + Math.sin(currentTimeSec() * 1.5) * 0.002;
       this.planeAngle = 6;
     }
 
