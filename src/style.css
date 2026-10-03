@@ -699,16 +699,102 @@ body {
   color: var(--accent-green);
 }
 
-/* RESPONSIVE LAYOUT (Mobile / Small Tablet) */
+/* RESPONSIVE LAYOUT (Mobile / Small Tablet - Spribe Aviator Standard Flow) */
 @media (max-width: 900px) {
-  .sidebar-bets {
-    display: none; /* Hide sidebar on small mobile to maximize flight stage */
+  body {
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: auto;
+    min-height: 100vh;
+    -webkit-overflow-scrolling: touch;
   }
+
+  .app-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .main-layout {
+    flex-direction: column;
+    height: auto;
+    min-height: calc(100vh - 56px);
+    overflow: visible;
+  }
+
+  /* 1. Game Canvas Stage & Dual Bet Panels on Top */
+  .game-stage-wrapper {
+    order: 1;
+    padding: 8px;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .canvas-container {
+    height: 270px;
+    min-height: 250px;
+    border-radius: var(--radius-md);
+  }
+
   .betting-panels-row {
     grid-template-columns: 1fr;
     height: auto;
+    gap: 8px;
   }
+
   .bet-panel {
-    height: 160px;
+    height: auto;
+    min-height: 155px;
+    border-radius: var(--radius-md);
+  }
+
+  /* 2. All Bets Table Placed Directly Below Bet Panels When Scrolling Down */
+  .sidebar-bets {
+    order: 2;
+    display: flex;
+    width: calc(100% - 16px);
+    height: 480px;
+    border-right: none;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    margin: 4px 8px 30px 8px;
+    background: var(--bg-card);
+  }
+
+  .sidebar-header {
+    padding: 10px 12px;
+  }
+
+  .bets-table-header {
+    padding: 8px 12px;
+  }
+
+  .bet-row {
+    padding: 7px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .bet-panel-main {
+    grid-template-columns: 1.25fr 1fr;
+    gap: 8px;
+  }
+  .quick-chips-row {
+    gap: 2px;
+  }
+  .chip-btn {
+    font-size: 10px;
+    padding: 4px 0;
+  }
+  .main-action-btn {
+    padding: 6px 4px;
+  }
+  .action-title {
+    font-size: 18px;
+    letter-spacing: 0.2px;
+  }
+  .action-subtitle {
+    font-size: 11px;
+    white-space: nowrap;
   }
 }
