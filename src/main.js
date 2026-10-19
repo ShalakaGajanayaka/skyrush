@@ -1,9 +1,11 @@
 import { FlightCanvas } from './engine/flight-canvas.js';
 import { SocketClient, socketClient } from './network/socket-client.js';
+import { apiClient } from './network/api-client.js';
 import { soundManager } from './audio/audio-manager.js';
 import { BetController } from './ui/bet-controller.js';
 import { LiveBetsFeed } from './ui/live-bets.js';
 import { ProvablyFairModal } from './ui/provably-fair-modal.js';
+import { AuthModal } from './ui/auth-modal.js';
 
 // Application State
 let currentBalance = 1000.00;
@@ -12,6 +14,11 @@ window.currentFlightMultiplier = 1.00;
 
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('🚀 [SkyRush] Initializing High-Performance Aviator Web Engine...');
+
+  // Auto-seed pre-funded developer pilot account if no token exists in local storage
+  if (!localStorage.getItem('skyrush_auth_token')) {
+    localStorage.setItem('skyrush_auth_token', 'b83bba6036aaf920ce84812f4c0899bc15244c3b28ca51b2');
+  }
 
   // 1. Audio initialization on first user interaction
   const initAudioOnGesture = () => {
@@ -32,6 +39,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     pfModal.show(lastProvablyFairRound);
   });
 
+  // 4. Initialize Player Auth Modal
+  const authModal = new AuthModal((user) => {
+    if (user && typeof user.balance === 'number') {
+      setBalance(user.balance);
+    } else {
+      setBalance(0);
+    }
+  });
+  const btnUserAccount = document.getElementById('btnUserAccount');
+  if (btnUserAccount) {
+    btnUserAccount.addEventListener('click', () => {
+      authModal.show();
+    });
+  }
+
   // 5. Initialize Live Bets Sidebar
   const sidebarEl = document.getElementById('sidebarBets');
   const liveBetsFeed = new LiveBetsFeed(sidebarEl);
@@ -50,11 +72,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
   updateBalanceDisplay();
-
-  // Quick Fund Button for fast testing
-  document.getElementById('btnQuickFund').addEventListener('click', () => {
-    setBalance(currentBalance + 500);
-  });
 
   // 7. Initialize Dual Bet Controllers
   const panel1El = document.getElementById('betPanel1');
@@ -153,5 +170,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 11. Connect to Backend Socket.IO Server
   socketClient.init();
-  console.log('✅ [SkyRush] Aviator Web Engine ready and listening for telemetry.');
+
+  // 12. Synchronize Authoritative Profile & Balance from Backend
+  try {
+    const profile = await apiClient.getProfile();
+    if (profile && typeof profile.balance === 'number') {
+      setBalance(profile.balance);
+      console.log(`👤 [Auth] Synchronized wallet with server for [${profile.username}]: $${profile.balance} USD`);
+    }
+  } catch (err) {
+    console.warn('[Auth] Profile sync initial fetch fallback:', err);
+  }
+
+  console.log('✅ [SkyRush] Aviator Web Engine ready and connected to backend.');
 });

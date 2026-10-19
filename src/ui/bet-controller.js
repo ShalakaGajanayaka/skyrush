@@ -165,7 +165,6 @@ export class BetController {
         return;
       }
 
-      // Transition to Queued / Placed
       this.placedAmount = this.amount;
       this.state = 'queued';
       this.updateButtonView();
@@ -180,16 +179,24 @@ export class BetController {
         autoCashout: this.autoCashout ? this.autoCashoutMultiplier : null,
       });
 
-      if (!res || res.success === false) {
-        alert(res?.message || 'Failed to place bet');
+      if (res && res.success) {
+        if (typeof res.balance === 'number') {
+          this.setBalance(res.balance);
+        }
+        this.activeBetId = res.bet?.id || betId;
+        this.state = res.queued ? 'queued' : 'placed';
+        this.updateButtonView();
+      } else {
+        alert(res?.message || 'Failed to place bet. Please verify your login session.');
         this.state = 'idle';
         this.activeBetId = null;
         this.updateButtonView();
       }
     } else if (this.state === 'queued') {
       // Cancel queued bet
-      if (this.activeBetId) {
-        await this.socket.cancelBet(this.activeBetId);
+      const res = await this.socket.cancelBet(this.index);
+      if (res && res.success && typeof res.balance === 'number') {
+        this.setBalance(res.balance);
       }
       this.state = 'idle';
       this.activeBetId = null;
@@ -204,7 +211,7 @@ export class BetController {
     if (this.state !== 'placed' || !this.activeBetId) return;
 
     const mult = multiplierOverride || window.currentFlightMultiplier || 1.0;
-    const winAmount = Number((this.placedAmount * mult).toFixed(2));
+    const estWin = Number((this.placedAmount * mult).toFixed(2));
 
     this.state = 'cashed_out';
     soundManager.playCashoutChime();
@@ -219,13 +226,23 @@ export class BetController {
     } catch (_) {}
 
     this.btnAction.className = 'main-action-btn btn-won';
-    this.btnTitle.textContent = `WON $${winAmount.toFixed(2)}`;
+    this.btnTitle.textContent = `WON $${estWin.toFixed(2)}`;
     this.btnSub.textContent = `@ ${mult.toFixed(2)}x`;
 
-    const betIdToCash = this.activeBetId;
     this.activeBetId = null;
 
-    await this.socket.cashOut(betIdToCash, mult);
+    const res = await this.socket.cashOut(this.index, mult);
+    if (res && res.success) {
+      if (typeof res.balance === 'number') {
+        this.setBalance(res.balance);
+      }
+      const finalMult = res.multiplier || mult;
+      const finalWin = res.winAmount || Number((this.placedAmount * finalMult).toFixed(2));
+      this.btnTitle.textContent = `WON $${finalWin.toFixed(2)}`;
+      this.btnSub.textContent = `@ ${finalMult.toFixed(2)}x`;
+    } else if (res && !res.success) {
+      console.warn('[BetController] Cashout rejected by server:', res.message);
+    }
   }
 
   onRoundWaiting(countdown) {

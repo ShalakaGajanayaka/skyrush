@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client';
+import { apiClient } from './api-client.js';
 
 export class SocketClient {
   constructor() {
@@ -8,11 +9,11 @@ export class SocketClient {
       ? 'http://localhost:3000'
       : window.location.origin;
 
-    this.authToken = localStorage.getItem('skyrush_auth_token') || null;
+    this.authToken = localStorage.getItem('skyrush_auth_token') || localStorage.getItem('token') || null;
     this.currentUser = null;
     this.activeRoom = 'standard';
 
-    // Clock sync
+    // Clock sync offset in ms
     this.serverClockOffset = 0;
 
     // Callbacks registry
@@ -25,6 +26,7 @@ export class SocketClient {
       betCashedOut: [],
       betCancelled: [],
       balanceUpdate: [],
+      userSubscribed: [],
     };
   }
 
@@ -32,8 +34,16 @@ export class SocketClient {
     this.authToken = token;
     if (token) {
       localStorage.setItem('skyrush_auth_token', token);
+      if (this.socket && this.isConnected) {
+        this.socket.emit('subscribeUser', { token });
+      }
     } else {
       localStorage.removeItem('skyrush_auth_token');
+      this.currentUser = null;
+      this.activeRoom = 'standard';
+      if (this.socket && this.isConnected) {
+        this.socket.emit('unsubscribeUser');
+      }
     }
   }
 
@@ -53,6 +63,7 @@ export class SocketClient {
 
     if (this.authToken) {
       socketOptions.auth = { token: this.authToken };
+      socketOptions.query = { token: this.authToken };
     }
 
     this.socket = io(this.serverUrl, socketOptions);
@@ -62,20 +73,17 @@ export class SocketClient {
       this.isConnected = true;
       this.notify('connectionChange', true);
 
-      // Perform initial clock sync
+      // 1. Initial clock sync
       this.syncClock();
 
-      // Subscribe to personal socket room if logged in
-      if (this.currentUser && this.currentUser.id) {
-        this.socket.emit('subscribeUser', {
-          userId: this.currentUser.id,
-          username: this.currentUser.username,
-        });
+      // 2. Authoritative room & user subscription
+      if (this.authToken) {
+        this.socket.emit('subscribeUser', { token: this.authToken });
       }
     });
 
     this.socket.on('disconnect', (reason) => {
-      console.warn('⚠️ [Socket] Disconnected:', reason);
+      console.warn('⚠️ [Socket] Disconnected from server:', reason);
       this.isConnected = false;
       this.notify('connectionChange', false);
     });
@@ -86,6 +94,7 @@ export class SocketClient {
       this.notify('connectionChange', false);
     });
 
+    // Handle pong clock sync
     this.socket.on('pongSync', (data) => {
       const t1 = Date.now();
       const t0 = data?.clientSendTime || t1;
@@ -101,9 +110,27 @@ export class SocketClient {
       }
     });
 
+    // Handle user subscription feedback (Authoritative room assignment from Redis/Postgres)
+    this.socket.on('userSubscribed', (data) => {
+      if (data?.success) {
+        this.currentUser = {
+          username: data.username,
+          isMarketing: !!data.isMarketing,
+          room: data.room || 'standard',
+        };
+        this.activeRoom = data.room || 'standard';
+        console.log(`👤 [Socket] Authenticated [${data.username}], assigned to [room:${this.activeRoom}]`);
+      } else {
+        console.warn('⚠️ [Socket] Session token expired or invalid:', data?.error);
+        this.currentUser = null;
+      }
+      this.notify('userSubscribed', data);
+    });
+
+    // Handle authoritative game state broadcast
     this.socket.on('gameState', (data) => {
       if (!data) return;
-      // Room guard: Ignore cross-room packets
+      // Room guard: Ignore packets belonging to other room
       const incomingRoom = data.room || 'standard';
       const isMarketing = this.currentUser?.isMarketing === true;
       if (isMarketing && incomingRoom === 'standard') return;
@@ -112,6 +139,7 @@ export class SocketClient {
       this.notify('gameState', data);
     });
 
+    // Handle high-frequency flight multiplier ticks
     this.socket.on('flightSync', (data) => {
       if (!data) return;
       const incomingRoom = data.room || 'standard';
@@ -122,13 +150,20 @@ export class SocketClient {
       this.notify('flightSync', data);
     });
 
+    // Live Bets stream
     this.socket.on('newLiveBet', (data) => this.notify('newLiveBet', data));
     this.socket.on('newLiveBetsBatch', (data) => this.notify('newLiveBetsBatch', data));
     this.socket.on('betCashedOut', (data) => this.notify('betCashedOut', data));
     this.socket.on('betCancelled', (data) => this.notify('betCancelled', data));
-    this.socket.on('userBalanceUpdated', (data) => this.notify('balanceUpdate', data));
 
-    // Clock sync interval (every 15s)
+    // Balance update events
+    this.socket.on('userBalanceUpdated', (data) => {
+      if (data && typeof data.balance === 'number') {
+        this.notify('balanceUpdate', data);
+      }
+    });
+
+    // Recurring clock sync (every 15s)
     setInterval(() => {
       if (this.isConnected) {
         this.syncClock();
@@ -160,40 +195,22 @@ export class SocketClient {
     }
   }
 
-  placeBet(betData) {
-    return new Promise((resolve) => {
-      if (!this.socket || !this.isConnected) {
-        resolve({ success: false, message: 'Offline. Please check connection.' });
-        return;
-      }
-      this.socket.emit('placeBet', betData, (response) => {
-        resolve(response || { success: true });
-      });
-    });
+  // --- Financial Actions (Unified with authoritative REST API) ---
+
+  async placeBet(betData) {
+    const betIndex = betData.betIndex || 1;
+    const amount = betData.amount || 1.0;
+    return apiClient.placeBet(betIndex, amount);
   }
 
-  cancelBet(betId) {
-    return new Promise((resolve) => {
-      if (!this.socket || !this.isConnected) {
-        resolve({ success: false });
-        return;
-      }
-      this.socket.emit('cancelBet', { id: betId }, (response) => {
-        resolve(response || { success: true });
-      });
-    });
+  async cancelBet(betIndexOrId) {
+    const betIndex = typeof betIndexOrId === 'number' ? betIndexOrId : (betIndexOrId?.betIndex || 1);
+    return apiClient.cancelBet(betIndex);
   }
 
-  cashOut(betId, multiplier) {
-    return new Promise((resolve) => {
-      if (!this.socket || !this.isConnected) {
-        resolve({ success: false });
-        return;
-      }
-      this.socket.emit('cashOut', { id: betId, multiplier }, (response) => {
-        resolve(response || { success: true });
-      });
-    });
+  async cashOut(betIndexOrId, multiplier = null) {
+    const betIndex = typeof betIndexOrId === 'number' ? betIndexOrId : (betIndexOrId?.betIndex || 1);
+    return apiClient.cashOut(betIndex);
   }
 }
 
