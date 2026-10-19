@@ -1,13 +1,12 @@
 import { io } from 'socket.io-client';
 import { apiClient } from './api-client.js';
+import { SERVER_BASE_URL, resolveServerUrl } from '../config/environment.js';
 
 export class SocketClient {
-  constructor() {
+  constructor(customServerUrl = null) {
     this.socket = null;
     this.isConnected = false;
-    this.serverUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'http://localhost:3000'
-      : window.location.origin;
+    this.serverUrl = customServerUrl || SERVER_BASE_URL || resolveServerUrl();
 
     this.authToken = localStorage.getItem('skyrush_auth_token') || localStorage.getItem('token') || null;
     this.currentUser = null;

@@ -1,9 +1,9 @@
+import { SERVER_BASE_URL, resolveServerUrl } from '../config/environment.js';
+
 // API Client for SkyRush Server Communication (REST Endpoints)
 export class ApiClient {
-  constructor() {
-    this.baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-      ? 'http://localhost:3000'
-      : window.location.origin;
+  constructor(customBaseUrl = null) {
+    this.baseUrl = customBaseUrl || SERVER_BASE_URL || resolveServerUrl();
   }
 
   getToken() {
