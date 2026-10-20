@@ -118,19 +118,33 @@ export class ApiClient {
     return res;
   }
 
-  async register(identifier, password, currency = 'USD') {
+  async register(identifier, password, currency = 'USD', username = null) {
+    const payload = {
+      email: identifier,
+      password,
+      currency,
+    };
+    if (username && typeof username === 'string' && username.trim()) {
+      payload.username = username.trim();
+    }
+
     const res = await this.request('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({
-        email: identifier,
-        password,
-        currency,
-      }),
+      body: JSON.stringify(payload),
     });
     if (res.success && res.token) {
       this.setToken(res.token);
     }
     return res;
+  }
+
+  async renameUser(newUsername) {
+    return this.request('/auth/rename', {
+      method: 'POST',
+      body: JSON.stringify({
+        newUsername: newUsername.trim(),
+      }),
+    });
   }
 
   async logout() {
