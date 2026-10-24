@@ -51,147 +51,97 @@ export class DepositModal {
               </div>
             </div>
 
-            <!-- Tab Switcher -->
-            <div class="bet-panel-tabs" style="margin-bottom: 14px;">
-              <button class="tab-btn active" id="tabDepositBinance">
-                🟡 Official Binance Deposit
-              </button>
-              <button class="tab-btn" id="tabDepositInstant">
-                ⚡ Practice / Demo Top-Up
-              </button>
-            </div>
-
-            <!-- ============================================== -->
-            <!-- TAB 1: OFFICIAL BINANCE DEPOSIT                -->
-            <!-- ============================================== -->
-            <div id="paneDepositBinance">
-              <!-- Merchant Info Card -->
-              <div class="binance-merchant-card">
-                <div class="merchant-badge-row">
-                  <span class="binance-pill">
-                    <span class="binance-dot"></span> Binance Pay / USDT
-                  </span>
-                  <span class="merchant-verified-tag">✓ Verified Merchant</span>
-                </div>
-
-                <!-- Pay ID Row with 1-Click Copy -->
-                <div class="binance-info-row">
-                  <div>
-                    <div class="info-label">BINANCE PAY ID</div>
-                    <div class="info-value" id="valBinancePayId">${this.binancePayId}</div>
-                  </div>
-                  <button type="button" class="btn-copy-code" id="btnCopyPayId" title="Copy Binance Pay ID">
-                    📋 Copy ID
-                  </button>
-                </div>
-
-                <!-- Recipient Nickname Row -->
-                <div class="binance-info-row" style="margin-top: 8px;">
-                  <div>
-                    <div class="info-label">RECIPIENT NICKNAME</div>
-                    <div class="info-value" style="color: #fff; font-weight: 700;">${this.merchantNickname}</div>
-                  </div>
-                  <button type="button" class="btn-copy-code" id="btnCopyNickname" title="Copy Nickname">
-                    📋 Copy Name
-                  </button>
-                </div>
+            <!-- Merchant Info Card -->
+            <div class="binance-merchant-card">
+              <div class="merchant-badge-row">
+                <span class="binance-pill">
+                  <span class="binance-dot"></span> Binance Pay / USDT
+                </span>
+                <span class="merchant-verified-tag">✓ Verified Merchant</span>
               </div>
 
-              <!-- Visual Instructions (Accordion / Step Guide) -->
-              <div class="binance-guide-box">
-                <div class="guide-step">
-                  <span class="step-num">1</span>
-                  <span>Open <b>Binance App</b> ➔ Tap <b>Pay</b> (or Transfer to Pay ID).</span>
+              <!-- Pay ID Row with 1-Click Copy -->
+              <div class="binance-info-row">
+                <div>
+                  <div class="info-label">BINANCE PAY ID</div>
+                  <div class="info-value" id="valBinancePayId">${this.binancePayId}</div>
                 </div>
-                <div class="guide-step">
-                  <span class="step-num">2</span>
-                  <span>Enter Pay ID <b>${this.binancePayId}</b> & verify name is <b>${this.merchantNickname}</b>.</span>
-                </div>
-                <div class="guide-step">
-                  <span class="step-num">3</span>
-                  <span>Send amount and copy the <b>Binance Order ID / TxID</b> from payment receipt.</span>
-                </div>
-              </div>
-
-              <!-- Form for submitting Binance Transfer Reference -->
-              <form id="formBinanceDeposit" style="margin-top: 14px; display: flex; flex-direction: column; gap: 12px;">
-                <!-- Deposit Amount Selection -->
-                <div class="form-group">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <label style="font-size: 12px; color: var(--text-dim); font-weight: 700;">
-                      DEPOSIT AMOUNT (USD / USDT)
-                    </label>
-                    <span style="font-size: 11px; color: #F0B90B; font-weight: 600;">1 USDT = $1.00 USD</span>
-                  </div>
-
-                  <!-- Quick Chips Grid -->
-                  <div class="deposit-chips-grid">
-                    <button type="button" class="deposit-chip-btn" data-amt="10">$10</button>
-                    <button type="button" class="deposit-chip-btn active" data-amt="25">$25</button>
-                    <button type="button" class="deposit-chip-btn" data-amt="50">$50</button>
-                    <button type="button" class="deposit-chip-btn" data-amt="100">$100</button>
-                    <button type="button" class="deposit-chip-btn" data-amt="250">$250</button>
-                  </div>
-
-                  <input type="number" id="inputBinanceAmount" class="bet-amount-input" 
-                    style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 15px; font-weight: 700; color: #F0B90B;" 
-                    value="25" min="1" step="any" required>
-                </div>
-
-                <!-- Binance Order ID / TxID Field -->
-                <div class="form-group">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <label style="font-size: 12px; color: var(--text-dim); font-weight: 700;">
-                      BINANCE ORDER ID OR TXID <span style="color: #ef4444;">*</span>
-                    </label>
-                    <span style="font-size: 11px; color: var(--text-muted);">From payment slip</span>
-                  </div>
-                  <input type="text" id="inputBinanceTxId" class="bet-amount-input" 
-                    style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid rgba(240, 185, 11, 0.3); border-radius: var(--radius-sm); font-size: 14px; font-family: monospace; letter-spacing: 0.5px; color: #fff;" 
-                    placeholder="e.g. 21984029148 or 0x3a8f..." required maxlength="96">
-                </div>
-
-                <!-- Submit Button -->
-                <button type="submit" id="btnSubmitBinanceDeposit" class="btn-binance-action">
-                  ⚡ SUBMIT FOR ADMIN APPROVAL
+                <button type="button" class="btn-copy-code" id="btnCopyPayId" title="Copy Binance Pay ID">
+                  📋 Copy ID
                 </button>
-              </form>
+              </div>
 
-              <!-- Verification Notice -->
-              <div class="binance-security-footer">
-                🛡️ <b>Physical Verification:</b> SkyRush administrators physically review the Binance account ledger and approve deposits within 2-5 minutes. Your game balance updates in real-time.
+              <!-- Recipient Nickname Row -->
+              <div class="binance-info-row" style="margin-top: 8px;">
+                <div>
+                  <div class="info-label">RECIPIENT NICKNAME</div>
+                  <div class="info-value" style="color: #fff; font-weight: 700;">${this.merchantNickname}</div>
+                </div>
+                <button type="button" class="btn-copy-code" id="btnCopyNickname" title="Copy Nickname">
+                  📋 Copy Name
+                </button>
               </div>
             </div>
 
-            <!-- ============================================== -->
-            <!-- TAB 2: DEMO / PRACTICE RELOAD                  -->
-            <!-- ============================================== -->
-            <div id="paneDepositInstant" style="display: none;">
-              <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
-                Reload practice flight funds instantly to test high-speed betting strategies without waiting for physical confirmation:
+            <!-- Visual Instructions (Accordion / Step Guide) -->
+            <div class="binance-guide-box">
+              <div class="guide-step">
+                <span class="step-num">1</span>
+                <span>Open <b>Binance App</b> ➔ Tap <b>Pay</b> (or Transfer to Pay ID).</span>
+              </div>
+              <div class="guide-step">
+                <span class="step-num">2</span>
+                <span>Enter Pay ID <b>${this.binancePayId}</b> & verify name is <b>${this.merchantNickname}</b>.</span>
+              </div>
+              <div class="guide-step">
+                <span class="step-num">3</span>
+                <span>Send amount and copy the <b>Binance Order ID / TxID</b> from payment receipt.</span>
+              </div>
+            </div>
+
+            <!-- Form for submitting Binance Transfer Reference -->
+            <form id="formBinanceDeposit" style="margin-top: 14px; display: flex; flex-direction: column; gap: 12px;">
+              <!-- Deposit Amount Selection -->
+              <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <label style="font-size: 12px; color: var(--text-dim); font-weight: 700;">
+                    DEPOSIT AMOUNT (USD / USDT)
+                  </label>
+                  <span style="font-size: 11px; color: #F0B90B; font-weight: 600;">1 USDT = $1.00 USD</span>
+                </div>
+
+                <!-- Quick Chips Grid -->
+                <div class="deposit-chips-grid">
+                  <button type="button" class="deposit-chip-btn" data-amt="10">$10</button>
+                  <button type="button" class="deposit-chip-btn active" data-amt="25">$25</button>
+                  <button type="button" class="deposit-chip-btn" data-amt="50">$50</button>
+                  <button type="button" class="deposit-chip-btn" data-amt="100">$100</button>
+                  <button type="button" class="deposit-chip-btn" data-amt="250">$250</button>
+                </div>
+
+                <input type="number" id="inputBinanceAmount" class="bet-amount-input" 
+                  style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 15px; font-weight: 700; color: #F0B90B;" 
+                  value="25" min="1" step="any" required>
               </div>
 
-              <!-- Quick Presets -->
-              <div class="deposit-chips-grid">
-                <button type="button" class="deposit-chip-btn-demo" data-amt="25">+$25</button>
-                <button type="button" class="deposit-chip-btn-demo" data-amt="50">+$50</button>
-                <button type="button" class="deposit-chip-btn-demo active" data-amt="100">+$100</button>
-                <button type="button" class="deposit-chip-btn-demo" data-amt="500">+$500</button>
-                <button type="button" class="deposit-chip-btn-demo" data-amt="1000">+$1,000</button>
+              <!-- Binance Order ID / TxID Field -->
+              <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <label style="font-size: 12px; color: var(--text-dim); font-weight: 700;">
+                    BINANCE ORDER ID OR TXID <span style="color: #ef4444;">*</span>
+                  </label>
+                  <span style="font-size: 11px; color: var(--text-muted);">From payment slip</span>
+                </div>
+                <input type="text" id="inputBinanceTxId" class="bet-amount-input" 
+                  style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid rgba(240, 185, 11, 0.3); border-radius: var(--radius-sm); font-size: 14px; font-family: monospace; letter-spacing: 0.5px; color: #fff;" 
+                  placeholder="e.g. 21984029148 or 0x3a8f..." required maxlength="96">
               </div>
 
-              <div class="form-group" style="margin-top: 12px; margin-bottom: 14px;">
-                <label style="font-size: 12px; color: var(--text-dim); font-weight: 600;">Custom Practice Amount (USD)</label>
-                <input type="number" id="inputInstantAmount" class="bet-amount-input" 
-                  style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 15px; font-weight: 700; color: #22c55e;" 
-                  value="100" min="1" step="1">
-              </div>
-
-              <button type="button" id="btnConfirmInstantReload" class="main-action-btn btn-idle" 
-                style="width: 100%; padding: 12px; font-size: 14px; font-weight: 800; height: 46px; background: linear-gradient(135deg, #16a34a, #22c55e); border: none;">
-                ⚡ INSTANT RELOAD WALLET
+              <!-- Submit Button -->
+              <button type="submit" id="btnSubmitBinanceDeposit" class="btn-binance-action">
+                ⚡ SUBMIT FOR ADMIN APPROVAL
               </button>
-            </div>
+            </form>
           </div>
         </div>
       </div>
@@ -207,33 +157,13 @@ export class DepositModal {
       if (e.target === this.modal) this.hide();
     });
 
-    // Tab switching
-    const tabBinance = document.getElementById('tabDepositBinance');
-    const tabInstant = document.getElementById('tabDepositInstant');
-    const paneBinance = document.getElementById('paneDepositBinance');
-    const paneInstant = document.getElementById('paneDepositInstant');
-
-    tabBinance.addEventListener('click', () => {
-      tabBinance.classList.add('active');
-      tabInstant.classList.remove('active');
-      paneBinance.style.display = 'block';
-      paneInstant.style.display = 'none';
-    });
-
-    tabInstant.addEventListener('click', () => {
-      tabInstant.classList.add('active');
-      tabBinance.classList.remove('active');
-      paneInstant.style.display = 'block';
-      paneBinance.style.display = 'none';
-    });
-
     // 1-Click Copy Handlers
     this.setupCopyButton('btnCopyPayId', this.binancePayId, 'Binance Pay ID');
     this.setupCopyButton('btnCopyNickname', this.merchantNickname, 'Merchant Nickname');
 
     // Quick chip selection for Binance Amount
     const inputBinanceAmount = document.getElementById('inputBinanceAmount');
-    const chipsBinance = this.modal.querySelectorAll('#paneDepositBinance .deposit-chip-btn');
+    const chipsBinance = this.modal.querySelectorAll('.deposit-chip-btn');
     chipsBinance.forEach(chip => {
       chip.addEventListener('click', () => {
         chipsBinance.forEach(c => c.classList.remove('active'));
@@ -242,42 +172,11 @@ export class DepositModal {
       });
     });
 
-    // Quick chip selection for Demo Amount
-    const inputInstantAmount = document.getElementById('inputInstantAmount');
-    const chipsDemo = this.modal.querySelectorAll('#paneDepositInstant .deposit-chip-btn-demo');
-    chipsDemo.forEach(chip => {
-      chip.addEventListener('click', () => {
-        chipsDemo.forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        inputInstantAmount.value = chip.getAttribute('data-amt');
-      });
-    });
-
     // Handle Official Binance Form Submission
     const formBinance = document.getElementById('formBinanceDeposit');
     formBinance.addEventListener('submit', async (e) => {
       e.preventDefault();
       await this.handleBinanceDepositSubmit();
-    });
-
-    // Handle Instant Demo Reload
-    const btnInstant = document.getElementById('btnConfirmInstantReload');
-    btnInstant.addEventListener('click', () => {
-      const amt = Number(inputInstantAmount.value);
-      if (!amt || amt <= 0) {
-        notificationManager.warning('Invalid Amount', 'Please specify a valid top-up amount.');
-        return;
-      }
-
-      const cur = this.getBalance();
-      const updated = cur + amt;
-      this.setBalance(updated);
-
-      this.hide();
-      notificationManager.success(
-        'Wallet Reloaded! 💰',
-        `Successfully credited +$${amt.toFixed(2)} USD to your flight wallet! Current balance: $${updated.toFixed(2)} USD.`
-      );
     });
   }
 
