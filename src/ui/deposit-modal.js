@@ -60,6 +60,25 @@ export class DepositModal {
                 <span class="merchant-verified-tag">✓ Verified Merchant</span>
               </div>
 
+              <!-- Binance Pay QR Code Display -->
+              <div class="binance-qr-section">
+                <div class="binance-qr-frame">
+                  <img 
+                    src="/binance-qr.png" 
+                    alt="Binance Pay QR Code" 
+                    class="binance-qr-img" 
+                    onerror="if(!this._triedJpeg){this._triedJpeg=true;this.src='/binance-qr.jpeg';}"
+                  />
+                </div>
+                <div class="binance-qr-subtext">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F0B90B" stroke-width="2.2">
+                    <path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+                    <rect x="7" y="7" width="10" height="10" rx="1"/>
+                  </svg>
+                  <span>Scan with <b>Binance App</b> or use Pay ID below</span>
+                </div>
+              </div>
+
               <!-- Pay ID Row with 1-Click Copy -->
               <div class="binance-info-row">
                 <div>
