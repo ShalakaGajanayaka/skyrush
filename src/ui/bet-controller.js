@@ -159,6 +159,19 @@ export class BetController {
 
   async handleActionClick() {
     if (this.state === 'idle') {
+      // Check if user is authenticated
+      const token = localStorage.getItem('skyrush_auth_token');
+      if (!token) {
+        notificationManager.info(
+          'Sign In Required 🔐',
+          'Please sign in or create an account to place bets and win real payouts.'
+        );
+        if (window.openAuthModal) {
+          window.openAuthModal();
+        }
+        return;
+      }
+
       // Check user balance
       const currentBalance = this.getBalance();
       if (currentBalance < this.amount) {

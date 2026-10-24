@@ -150,6 +150,97 @@ body {
   color: var(--accent-green);
 }
 
+/* Balance Ticker / Flipper for Zero Balance Promo */
+.balance-ticker-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  overflow: hidden;
+  min-width: 82px;
+}
+
+.ticker-text {
+  display: inline-block;
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 14px;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+}
+
+.ticker-bal {
+  color: var(--accent-green);
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.ticker-prompt {
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: #F0B90B;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+/* When has-zero-balance is active, alternately show balance and "⚡ Deposit" */
+.balance-card.has-zero-balance {
+  border-color: rgba(240, 185, 11, 0.35);
+  box-shadow: 0 0 12px rgba(240, 185, 11, 0.1);
+}
+
+.balance-card.has-zero-balance .ticker-bal {
+  color: #94a3b8;
+  animation: tickerBalSlide 6s ease-in-out infinite;
+}
+
+.balance-card.has-zero-balance .ticker-prompt {
+  animation: tickerPromptSlide 6s ease-in-out infinite;
+}
+
+.balance-card.has-zero-balance:hover {
+  border-color: rgba(240, 185, 11, 0.6);
+  background: rgba(240, 185, 11, 0.12);
+  box-shadow: 0 4px 16px rgba(240, 185, 11, 0.25);
+}
+
+.balance-card.has-zero-balance:hover .balance-plus-badge {
+  background: #F0B90B;
+  color: #0b0e14;
+}
+
+@keyframes tickerBalSlide {
+  0%, 55% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  60%, 95% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tickerPromptSlide {
+  0%, 55% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  60%, 95% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
 .btn-icon {
   background: transparent;
   border: 1px solid var(--border-subtle);

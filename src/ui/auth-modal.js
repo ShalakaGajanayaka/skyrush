@@ -44,6 +44,7 @@ export class AuthModal {
     this.modal = null;
     this.currentUser = null;
     this.onAuthChanged = onAuthChanged;
+    this.pendingSuccessCallback = null;
     this.initUI();
   }
 
@@ -207,6 +208,11 @@ export class AuthModal {
         if (this.onAuthChanged) this.onAuthChanged(res.user);
         this.hide();
         notificationManager.success('Welcome Back!', `Signed in as [${res.user?.username || identifier}].`);
+        if (typeof this.pendingSuccessCallback === 'function') {
+          const cb = this.pendingSuccessCallback;
+          this.pendingSuccessCallback = null;
+          cb(res.user);
+        }
       } else {
         notificationManager.error('Sign In Failed', res.message || 'Login failed. Please check credentials.');
       }
@@ -224,6 +230,11 @@ export class AuthModal {
         if (this.onAuthChanged) this.onAuthChanged(res.user);
         this.hide();
         notificationManager.success('Pilot Registered!', `Welcome to SkyRush, [${res.user?.username || 'Pilot'}]!`);
+        if (typeof this.pendingSuccessCallback === 'function') {
+          const cb = this.pendingSuccessCallback;
+          this.pendingSuccessCallback = null;
+          cb(res.user);
+        }
       } else {
         notificationManager.error('Registration Failed', res.message || 'Registration failed.');
       }
@@ -284,6 +295,11 @@ export class AuthModal {
       const profile = await apiClient.getProfile();
       if (profile && profile.id) {
         if (this.onAuthChanged) this.onAuthChanged(profile);
+        if (typeof this.pendingSuccessCallback === 'function') {
+          const cb = this.pendingSuccessCallback;
+          this.pendingSuccessCallback = null;
+          cb(profile);
+        }
       }
       this.hide();
     });
@@ -296,8 +312,9 @@ export class AuthModal {
     });
   }
 
-  async show() {
+  async show(onSuccessCallback = null) {
     if (!this.modal) return;
+    this.pendingSuccessCallback = onSuccessCallback;
     const profile = await apiClient.getProfile();
     this.renderAuthState(profile && profile.id ? profile : null);
     this.modal.style.display = 'flex';

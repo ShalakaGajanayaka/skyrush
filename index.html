@@ -22,14 +22,17 @@
       </div>
 
       <div class="header-right">
-        <div class="balance-card" id="headerBalanceCard" title="Click to Top-Up / Deposit">
+        <div class="balance-card has-zero-balance" id="headerBalanceCard" title="Click to Top-Up / Deposit">
           <span class="wallet-icon">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="2" y="4" width="20" height="16" rx="2"/>
               <line x1="2" y1="10" x2="22" y2="10"/>
             </svg>
           </span>
-          <span id="userBalanceText">$1,000.00 USD</span>
+          <div class="balance-ticker-wrap">
+            <span class="ticker-text ticker-bal" id="userBalanceText">$0.00 USD</span>
+            <span class="ticker-text ticker-prompt">⚡ Deposit</span>
+          </div>
           <span class="balance-plus-badge" title="Quick Deposit">+</span>
         </div>
 

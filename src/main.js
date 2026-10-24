@@ -11,17 +11,12 @@ import { notificationManager } from './ui/notification-manager.js';
 import confetti from 'canvas-confetti';
 
 // Application State
-let currentBalance = 1000.00;
+let currentBalance = 0.00;
 let lastProvablyFairRound = null;
 window.currentFlightMultiplier = 1.00;
 
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('🚀 [SkyRush] Initializing High-Performance Aviator Web Engine...');
-
-  // Auto-seed pre-funded developer pilot account if no token exists in local storage
-  if (!localStorage.getItem('skyrush_auth_token')) {
-    localStorage.setItem('skyrush_auth_token', 'b83bba6036aaf920ce84812f4c0899bc15244c3b28ca51b2');
-  }
 
   // 1. Audio initialization on first user interaction
   const initAudioOnGesture = () => {
@@ -70,22 +65,53 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function updateBalanceDisplay() {
     const el = document.getElementById('userBalanceText');
+    const balanceCard = document.getElementById('headerBalanceCard') || document.querySelector('.balance-card');
     if (el) {
       el.textContent = `$${currentBalance.toFixed(2)} USD`;
+    }
+    if (balanceCard) {
+      if (currentBalance <= 0) {
+        balanceCard.classList.add('has-zero-balance');
+      } else {
+        balanceCard.classList.remove('has-zero-balance');
+      }
     }
   }
   updateBalanceDisplay();
 
-  // 6.1 Initialize Deposit & Cashier Modal
+  // 6.1 Initialize Deposit & Cashier Modal with Smart Auth Routing
   const depositModal = new DepositModal(getBalance, setBalance);
-  window.openDepositModal = (targetAmount = 0) => depositModal.show(targetAmount);
 
-  const balanceCard = document.querySelector('.balance-card');
+  function handleWalletAction(targetAmount = 0) {
+    const token = apiClient.getToken();
+    if (!token) {
+      // User is not signed in -> open Auth Modal, then auto-open Deposit Modal after sign-in
+      notificationManager.info(
+        'Sign In Required 🔐',
+        'Please sign in or create an account to deposit funds and start playing.'
+      );
+      authModal.show((user) => {
+        if (user) {
+          setTimeout(() => {
+            depositModal.show(targetAmount);
+          }, 350);
+        }
+      });
+    } else {
+      // User is signed in -> direct to Binance Cashier
+      depositModal.show(targetAmount);
+    }
+  }
+
+  window.openDepositModal = (targetAmount = 0) => handleWalletAction(targetAmount);
+  window.openAuthModal = () => authModal.show();
+
+  const balanceCard = document.getElementById('headerBalanceCard') || document.querySelector('.balance-card');
   if (balanceCard) {
     balanceCard.style.cursor = 'pointer';
     balanceCard.title = 'Click to Top-Up / Deposit';
     balanceCard.addEventListener('click', () => {
-      depositModal.show();
+      handleWalletAction();
     });
   }
 
