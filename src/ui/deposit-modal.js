@@ -33,8 +33,8 @@ export class DepositModal {
     const modalHtml = `
       <div class="pf-modal-backdrop" id="depositModal" style="display: none; z-index: 10000;">
         <div class="pf-modal-box binance-cashier-modal" style="max-width: 490px;">
-          <!-- Modal Header with Navigation Tabs -->
-          <div class="pf-modal-header" style="border-bottom: 1px solid rgba(240, 185, 11, 0.2); flex-direction: column; align-items: stretch; gap: 10px;">
+          <!-- Modal Header with Clean Segmented Control -->
+          <div class="pf-modal-header" style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); flex-direction: column; align-items: stretch; gap: 12px; padding-bottom: 12px;">
             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
               <div class="pf-title" style="display: flex; align-items: center; gap: 8px;">
                 <svg width="24" height="24" viewBox="0 0 1024 1024" fill="#F0B90B">
@@ -47,12 +47,12 @@ export class DepositModal {
               <button class="pf-close-btn" id="depositCloseBtn" title="Close Cashier">✕</button>
             </div>
 
-            <!-- Dual Cashier Navigation Tabs -->
-            <div class="bet-panel-tabs cashier-nav-tabs" style="display: flex; gap: 8px; width: 100%; margin: 0;">
-              <button type="button" class="tab-btn active" id="tabCashierDeposit" style="flex: 1; padding: 8px; font-size: 13px; font-weight: 700;">
+            <!-- Borderless Segmented Capsule Tabs -->
+            <div class="cashier-segmented-control">
+              <button type="button" class="cashier-segment-btn active" id="tabCashierDeposit">
                 ⚡ Binance Deposit
               </button>
-              <button type="button" class="tab-btn" id="tabCashierWithdraw" style="flex: 1; padding: 8px; font-size: 13px; font-weight: 700;">
+              <button type="button" class="cashier-segment-btn" id="tabCashierWithdraw">
                 💸 Binance Withdraw
               </button>
             </div>
@@ -163,7 +163,7 @@ export class DepositModal {
                   </div>
 
                   <input type="number" id="inputBinanceAmount" class="bet-amount-input" 
-                    style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 15px; font-weight: 700; color: #F0B90B;" 
+                    style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border-radius: var(--radius-sm); font-size: 15px; font-weight: 700; color: #F0B90B;" 
                     value="10" min="5" step="any" required>
                 </div>
 
@@ -176,7 +176,7 @@ export class DepositModal {
                     <span style="font-size: 11px; color: var(--text-muted);">From payment slip</span>
                   </div>
                   <input type="text" id="inputBinanceTxId" class="bet-amount-input" 
-                    style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid rgba(240, 185, 11, 0.3); border-radius: var(--radius-sm); font-size: 14px; font-family: monospace; letter-spacing: 0.5px; color: #fff;" 
+                    style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border-radius: var(--radius-sm); font-size: 14px; font-family: monospace; letter-spacing: 0.5px; color: #fff;" 
                     placeholder="e.g. 21984029148 or 0x3a8f..." required maxlength="96">
                 </div>
 
@@ -192,7 +192,7 @@ export class DepositModal {
             <!-- ======================================================== -->
             <div id="cashierWithdrawSection" style="display: none;">
               <!-- Available Balance Bar -->
-              <div class="deposit-balance-overview" style="border-left: 3px solid #10b981;">
+              <div class="deposit-balance-overview">
                 <div>
                   <div class="overview-label">AVAILABLE TO WITHDRAW</div>
                   <div class="overview-val" style="color: #10b981;" id="withdrawCurrentBal">$0.00 USD</div>
@@ -209,7 +209,7 @@ export class DepositModal {
                   <span class="binance-pill">
                     <span class="binance-dot"></span> Payout via Binance Pay / USDT
                   </span>
-                  <span class="merchant-verified-tag" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border-color: rgba(16, 185, 129, 0.3);">
+                  <span class="merchant-verified-tag" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">
                     ✓ 0% Platform Fee
                   </span>
                 </div>
@@ -237,7 +237,7 @@ export class DepositModal {
                   </div>
 
                   <input type="number" id="inputWithdrawAmount" class="bet-amount-input" 
-                    style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 15px; font-weight: 700; color: #10b981;" 
+                    style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border-radius: var(--radius-sm); font-size: 15px; font-weight: 700; color: #10b981;" 
                     value="7" min="7" step="any" required>
                 </div>
 
@@ -250,7 +250,7 @@ export class DepositModal {
                     <span style="font-size: 11px; color: var(--text-muted);">TRC20 / BEP20 / Pay ID</span>
                   </div>
                   <input type="text" id="inputWithdrawRecipient" class="bet-amount-input" 
-                    style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-sm); font-size: 14px; font-family: monospace; letter-spacing: 0.5px; color: #fff;" 
+                    style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border-radius: var(--radius-sm); font-size: 14px; font-family: monospace; letter-spacing: 0.5px; color: #fff;" 
                     placeholder="e.g. 548934240 or 0x3a... / T..." required maxlength="96">
                 </div>
 
@@ -260,12 +260,12 @@ export class DepositModal {
                     BINANCE ACCOUNT NICKNAME (OPTIONAL)
                   </label>
                   <input type="text" id="inputWithdrawNickname" class="bet-amount-input" 
-                    style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 14px; color: #fff;" 
+                    style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border-radius: var(--radius-sm); font-size: 14px; color: #fff;" 
                     placeholder="e.g. SkyPilot99" maxlength="32">
                 </div>
 
                 <!-- Escrow Security Note -->
-                <div class="binance-security-footer" style="border-left-color: #10b981; margin-top: 4px;">
+                <div class="binance-security-footer" style="margin-top: 4px;">
                   🔒 <b>Escrow Protection:</b> Funds are reserved in escrow upon submission. Once verified by our financial desk, USDT is transferred directly to your Binance wallet.
                 </div>
 
