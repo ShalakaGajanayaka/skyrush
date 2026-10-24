@@ -134,10 +134,20 @@ body {
   font-weight: 700;
   font-size: 14px;
   color: var(--accent-green);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.balance-card:hover {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.15);
 }
 
 .balance-card .wallet-icon {
-  color: var(--text-muted);
+  color: var(--accent-green);
 }
 
 .btn-icon {
@@ -798,3 +808,279 @@ body {
     white-space: nowrap;
   }
 }
+
+/* ============================================================
+   SKYRUSH IN-GAME NOTIFICATIONS & TOAST SYSTEM
+   ============================================================ */
+.skyrush-toast-container {
+  position: fixed;
+  top: 68px;
+  right: 20px;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 420px;
+  width: calc(100vw - 32px);
+  pointer-events: none;
+}
+
+.skyrush-toast {
+  pointer-events: auto;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  background: rgba(18, 22, 31, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  animation: toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.skyrush-toast.dismissing {
+  animation: toastSlideOut 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.skyrush-toast.warning {
+  border-color: rgba(245, 158, 11, 0.45);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65), 0 0 24px rgba(245, 158, 11, 0.18);
+}
+
+.skyrush-toast.error {
+  border-color: rgba(229, 27, 36, 0.5);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65), 0 0 24px rgba(229, 27, 36, 0.2);
+}
+
+.skyrush-toast.success {
+  border-color: rgba(34, 197, 94, 0.5);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65), 0 0 24px rgba(34, 197, 94, 0.18);
+}
+
+.toast-icon-wrapper {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 2px;
+}
+
+.toast-content-wrapper {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast-title {
+  font-weight: 800;
+  font-size: 14px;
+  color: #ffffff;
+  letter-spacing: 0.2px;
+  margin-bottom: 3px;
+}
+
+.toast-message {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.toast-action-btn {
+  margin-top: 10px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #000;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 12px;
+  padding: 6px 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 3px 10px rgba(245, 158, 11, 0.3);
+  transition: all 0.18s ease;
+}
+
+.skyrush-toast.success .toast-action-btn {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(34, 197, 94, 0.3);
+}
+
+.toast-action-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
+.toast-action-btn:active {
+  transform: translateY(1px);
+}
+
+.toast-close-btn {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.toast-close-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.toast-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f59e0b, #e51b24);
+  width: 100%;
+  transform-origin: left;
+  animation: toastProgress linear forwards;
+}
+
+.skyrush-toast.success .toast-progress-bar {
+  background: linear-gradient(90deg, #22c55e, #38bdf8);
+}
+
+.skyrush-toast.error .toast-progress-bar {
+  background: linear-gradient(90deg, #e51b24, #f43f5e);
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toastSlideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.94);
+  }
+}
+
+@keyframes toastProgress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Haptic Rhythmic Shake Animation for Elements */
+@keyframes skyrush-shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-6px) rotate(-1deg); }
+  30% { transform: translateX(5px) rotate(1deg); }
+  45% { transform: translateX(-4px) rotate(-0.5deg); }
+  60% { transform: translateX(3px) rotate(0.5deg); }
+  75% { transform: translateX(-2px); }
+}
+
+.skyrush-shake {
+  animation: skyrush-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* Balance Plus Badge */
+.balance-plus-badge {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  margin-left: 2px;
+  transition: all 0.2s ease;
+}
+
+.balance-card:hover .balance-plus-badge {
+  background: #22c55e;
+  color: #0b0e14;
+}
+
+/* Deposit Modal Styles */
+.deposit-balance-overview {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  margin-bottom: 14px;
+}
+
+.overview-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  margin-bottom: 2px;
+}
+
+.overview-val {
+  font-size: 18px;
+  font-weight: 800;
+  color: #22c55e;
+  letter-spacing: -0.2px;
+}
+
+.deposit-chips-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.deposit-chip-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.deposit-chip-btn:hover {
+  color: #fff;
+  border-color: rgba(34, 197, 94, 0.4);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.deposit-chip-btn.active {
+  background: rgba(34, 197, 94, 0.18);
+  border-color: #22c55e;
+  color: #22c55e;
+}
+

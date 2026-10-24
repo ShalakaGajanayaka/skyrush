@@ -1,5 +1,6 @@
 import { apiClient } from '../network/api-client.js';
 import { socketClient } from '../network/socket-client.js';
+import { notificationManager } from './notification-manager.js';
 
 // High-Entropy Client-Side Gaming Call-Sign Generator (Matches Backend Procedural Pool)
 const CLIENT_ADJECTIVES = [
@@ -205,8 +206,9 @@ export class AuthModal {
         socketClient.setAuthToken(res.token);
         if (this.onAuthChanged) this.onAuthChanged(res.user);
         this.hide();
+        notificationManager.success('Welcome Back!', `Signed in as [${res.user?.username || identifier}].`);
       } else {
-        alert(res.message || 'Login failed');
+        notificationManager.error('Sign In Failed', res.message || 'Login failed. Please check credentials.');
       }
     });
 
@@ -221,8 +223,9 @@ export class AuthModal {
         socketClient.setAuthToken(res.token);
         if (this.onAuthChanged) this.onAuthChanged(res.user);
         this.hide();
+        notificationManager.success('Pilot Registered!', `Welcome to SkyRush, [${res.user?.username || 'Pilot'}]!`);
       } else {
-        alert(res.message || 'Registration failed');
+        notificationManager.error('Registration Failed', res.message || 'Registration failed.');
       }
     });
 
@@ -250,7 +253,7 @@ export class AuthModal {
     document.getElementById('btnSaveCallsign').addEventListener('click', async () => {
       const newCallsign = inputNewCallsign.value.trim();
       if (!newCallsign || newCallsign.length < 3 || newCallsign.length > 16) {
-        alert('Call-Sign must be between 3 and 16 characters.');
+        notificationManager.warning('Invalid Call-Sign', 'Call-Sign must be between 3 and 16 characters.');
         return;
       }
 
@@ -267,9 +270,9 @@ export class AuthModal {
         }
 
         if (this.onAuthChanged) this.onAuthChanged(res);
-        alert(`✅ Call-Sign successfully updated to [${res.username}]!`);
+        notificationManager.success('Call-Sign Updated', `Call-Sign successfully updated to [${res.username}]!`);
       } else {
-        alert(res.message || 'Failed to update username. Name may already be taken.');
+        notificationManager.error('Update Failed', res.message || 'Failed to update username. Name may already be taken.');
       }
     });
 

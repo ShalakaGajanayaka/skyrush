@@ -6,6 +6,8 @@ import { BetController } from './ui/bet-controller.js';
 import { LiveBetsFeed } from './ui/live-bets.js';
 import { ProvablyFairModal } from './ui/provably-fair-modal.js';
 import { AuthModal } from './ui/auth-modal.js';
+import { DepositModal } from './ui/deposit-modal.js';
+import { notificationManager } from './ui/notification-manager.js';
 
 // Application State
 let currentBalance = 1000.00;
@@ -72,6 +74,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
   updateBalanceDisplay();
+
+  // 6.1 Initialize Deposit & Cashier Modal
+  const depositModal = new DepositModal(getBalance, setBalance);
+  window.openDepositModal = (targetAmount = 0) => depositModal.show(targetAmount);
+
+  const balanceCard = document.querySelector('.balance-card');
+  if (balanceCard) {
+    balanceCard.style.cursor = 'pointer';
+    balanceCard.title = 'Click to Top-Up / Deposit';
+    balanceCard.addEventListener('click', () => {
+      depositModal.show();
+    });
+  }
 
   // 7. Initialize Dual Bet Controllers
   const panel1El = document.getElementById('betPanel1');

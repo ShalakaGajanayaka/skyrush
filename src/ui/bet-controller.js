@@ -1,5 +1,6 @@
 import { soundManager } from '../audio/audio-manager.js';
 import confetti from 'canvas-confetti';
+import { notificationManager } from './notification-manager.js';
 
 export class BetController {
   constructor(panelElement, panelIndex, socketClient, getBalanceCallback, setBalanceCallback) {
@@ -161,7 +162,23 @@ export class BetController {
       // Check user balance
       const currentBalance = this.getBalance();
       if (currentBalance < this.amount) {
-        alert(`Insufficient balance. Your balance is $${currentBalance.toFixed(2)} USD.`);
+        // Haptic shake on this bet action button and header balance card
+        notificationManager.shake(this.btnAction);
+        notificationManager.shake('.balance-card');
+
+        notificationManager.warning(
+          'Insufficient Balance',
+          `Your balance is $${currentBalance.toFixed(2)} USD. You need $${(this.amount - currentBalance).toFixed(2)} USD more to place this bet.`,
+          {
+            actionText: '⚡ Top Up Wallet',
+            onAction: () => {
+              if (window.openDepositModal) {
+                window.openDepositModal(this.amount);
+              }
+            },
+            duration: 5000,
+          }
+        );
         return;
       }
 
@@ -187,7 +204,10 @@ export class BetController {
         this.state = res.queued ? 'queued' : 'placed';
         this.updateButtonView();
       } else {
-        alert(res?.message || 'Failed to place bet. Please verify your login session.');
+        notificationManager.error(
+          'Bet Failed',
+          res?.message || 'Failed to place bet. Please verify your login session.'
+        );
         this.state = 'idle';
         this.activeBetId = null;
         this.updateButtonView();

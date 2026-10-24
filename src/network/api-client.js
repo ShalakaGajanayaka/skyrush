@@ -96,6 +96,19 @@ export class ApiClient {
     });
   }
 
+  async submitDeposit(amount, paymentMethod = 'Crypto/USDT', referenceNumber = '') {
+    const token = this.getToken();
+    return this.request('/admin/deposit-request', {
+      method: 'POST',
+      body: JSON.stringify({
+        token,
+        amount: Number(amount),
+        paymentMethod,
+        referenceNumber: referenceNumber || `REF-${Date.now().toString(36).toUpperCase()}`,
+      }),
+    });
+  }
+
   // --- Auth & User Profile ---
 
   async getProfile() {
