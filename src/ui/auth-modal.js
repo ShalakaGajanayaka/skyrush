@@ -39,6 +39,56 @@ export function generateRandomCallSign() {
   }
 }
 
+/**
+ * Cryptographically Secure Password Generator
+ * Generates an entropy-rich password (uppercase, lowercase, numbers, safe symbols)
+ * using window.crypto.getRandomValues.
+ */
+export function generateSecurePassword(length = 10) {
+  const uppers = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lowers = 'abcdefghjkmnpqrstuvwxyz';
+  const digits = '23456789';
+  const symbols = '!@#$%&*';
+  const allChars = uppers + lowers + digits + symbols;
+
+  const cryptoObj = window.crypto || window.msCrypto;
+  const getRandomChar = (charset) => {
+    if (cryptoObj && cryptoObj.getRandomValues) {
+      const arr = new Uint32Array(1);
+      cryptoObj.getRandomValues(arr);
+      return charset[arr[0] % charset.length];
+    }
+    return charset[Math.floor(Math.random() * charset.length)];
+  };
+
+  // Guarantee at least 1 of each character class
+  const result = [
+    getRandomChar(uppers),
+    getRandomChar(lowers),
+    getRandomChar(digits),
+    getRandomChar(symbols),
+  ];
+
+  for (let i = result.length; i < length; i++) {
+    result.push(getRandomChar(allChars));
+  }
+
+  // Cryptographic array shuffle
+  for (let i = result.length - 1; i > 0; i--) {
+    let j = 0;
+    if (cryptoObj && cryptoObj.getRandomValues) {
+      const arr = new Uint32Array(1);
+      cryptoObj.getRandomValues(arr);
+      j = arr[0] % (i + 1);
+    } else {
+      j = Math.floor(Math.random() * (i + 1));
+    }
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+
+  return result.join('');
+}
+
 export class AuthModal {
   constructor(onAuthChanged) {
     this.modal = null;
@@ -141,8 +191,18 @@ export class AuthModal {
                 </div>
 
                 <div class="form-group">
-                  <label style="font-size: 12px; color: var(--text-dim); font-weight: 600;">Password (Min 8 Characters)</label>
-                  <input type="password" id="regPassword" class="bet-amount-input" style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 14px;" placeholder="••••••••" minlength="8" required>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <label style="font-size: 12px; color: var(--text-dim); font-weight: 600;">Password (Min 8 Characters)</label>
+                    <button type="button" id="btnGeneratePassword" class="auth-text-action-btn" title="Auto-generate a strong password">
+                      🔑 Auto-Generate
+                    </button>
+                  </div>
+                  <div style="position: relative; display: flex; align-items: center;">
+                    <input type="password" id="regPassword" class="bet-amount-input" style="width: 100%; text-align: left; padding: 10px 42px 10px 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 14px;" placeholder="••••••••" minlength="8" required>
+                    <button type="button" id="btnToggleRegPassword" class="auth-pwd-eye-btn" title="Show/Hide Password">
+                      👁️
+                    </button>
+                  </div>
                 </div>
                 <button type="submit" class="main-action-btn btn-idle" style="width: 100%; padding: 10px; margin-top: 6px; font-size: 14px; font-weight: 700; height: 42px;">
                   CREATE FREE ACCOUNT
@@ -195,6 +255,43 @@ export class AuthModal {
     document.getElementById('btnShuffleUsername').addEventListener('click', () => {
       regUsernameInput.value = generateRandomCallSign();
       regUsernameInput.focus();
+    });
+
+    // 🔑 Auto-Generate Secure Password in Register Form
+    const regPasswordInput = document.getElementById('regPassword');
+    const btnGeneratePassword = document.getElementById('btnGeneratePassword');
+    const btnToggleRegPassword = document.getElementById('btnToggleRegPassword');
+
+    btnGeneratePassword.addEventListener('click', async () => {
+      const strongPass = generateSecurePassword(10);
+      regPasswordInput.value = strongPass;
+      regPasswordInput.type = 'text'; // Reveal generated password so user can see it immediately
+      btnToggleRegPassword.textContent = '🙈';
+      btnToggleRegPassword.title = 'Hide Password';
+      regPasswordInput.focus();
+
+      try {
+        await navigator.clipboard.writeText(strongPass);
+        notificationManager.success(
+          'Password Generated & Copied! 📋',
+          `Generated: [${strongPass}]. Copied to clipboard, keep it safe!`
+        );
+      } catch (_) {
+        notificationManager.info('Password Generated! 🔑', `Generated: [${strongPass}]. Please save it!`);
+      }
+    });
+
+    // 👁️ Toggle Password Visibility (Show/Hide)
+    btnToggleRegPassword.addEventListener('click', () => {
+      if (regPasswordInput.type === 'password') {
+        regPasswordInput.type = 'text';
+        btnToggleRegPassword.textContent = '🙈';
+        btnToggleRegPassword.title = 'Hide Password';
+      } else {
+        regPasswordInput.type = 'password';
+        btnToggleRegPassword.textContent = '👁️';
+        btnToggleRegPassword.title = 'Show Password';
+      }
     });
 
     // Form handlers
