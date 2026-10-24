@@ -110,6 +110,20 @@ export class ApiClient {
     });
   }
 
+  async submitWithdrawal(amount, method = 'binance_usdt', payoutDetails = {}) {
+    const token = this.getToken();
+    return this.request('/admin/withdrawal-request', {
+      method: 'POST',
+      body: JSON.stringify({
+        token,
+        amount: Number(amount),
+        currency: 'USD',
+        method: method || 'binance_usdt',
+        payoutDetails,
+      }),
+    });
+  }
+
   // --- Auth & User Profile ---
 
   async getProfile() {

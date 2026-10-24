@@ -1472,3 +1472,42 @@ body {
   color: #ffffff;
   background: rgba(255, 255, 255, 0.08);
 }
+
+.cashier-nav-tabs .tab-btn {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-dim);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cashier-nav-tabs .tab-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.cashier-nav-tabs .tab-btn.active {
+  background: rgba(240, 185, 11, 0.15);
+  border-color: #F0B90B;
+  color: #F0B90B;
+}
+
+#tabCashierWithdraw.active {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: #10b981;
+  color: #10b981;
+}
+
+#withdrawChipsGrid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+#withdrawChipsGrid .deposit-chip-btn.active {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: #10b981;
+  color: #10b981;
+}
