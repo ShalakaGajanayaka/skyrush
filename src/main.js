@@ -13,10 +13,25 @@ import confetti from 'canvas-confetti';
 // Application State
 let currentBalance = 0.00;
 let lastProvablyFairRound = null;
+let currentUser = null;
 window.currentFlightMultiplier = 1.00;
+
+// Helper to verify if the client has an active, authenticated pilot session
+const isUserSignedIn = () => Boolean(currentUser && currentUser.id && apiClient.getToken());
+window.isUserAuthenticated = isUserSignedIn;
 
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('🚀 [SkyRush] Initializing High-Performance Aviator Web Engine...');
+
+  // 0. Purge legacy hardcoded mock tokens from previous dev versions
+  const savedToken = localStorage.getItem('skyrush_auth_token');
+  const LEGACY_MOCK_TOKEN = 'b83bba6036aaf920ce84812f4c0899bc15244c3b28ca51b2';
+  if (savedToken === LEGACY_MOCK_TOKEN) {
+    console.log('🧹 [Auth] Purging legacy developer mock token from localStorage.');
+    localStorage.removeItem('skyrush_auth_token');
+    apiClient.setToken(null);
+    socketClient.setAuthToken(null);
+  }
 
   // 1. Audio initialization on first user interaction
   const initAudioOnGesture = () => {
@@ -39,10 +54,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 4. Initialize Player Auth Modal
   const authModal = new AuthModal((user) => {
-    if (user && typeof user.balance === 'number') {
-      setBalance(user.balance);
+    currentUser = user && user.id ? user : null;
+    if (currentUser && typeof currentUser.balance === 'number') {
+      setBalance(currentUser.balance);
     } else {
+      currentUser = null;
       setBalance(0);
+      apiClient.setToken(null);
+      socketClient.setAuthToken(null);
     }
   });
   const btnUserAccount = document.getElementById('btnUserAccount');
@@ -83,24 +102,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   const depositModal = new DepositModal(getBalance, setBalance);
 
   function handleWalletAction(targetAmount = 0) {
-    const token = apiClient.getToken();
-    if (!token) {
-      // User is not signed in -> open Auth Modal, then auto-open Deposit Modal after sign-in
+    // Strictly verify if the user is authenticated
+    if (!isUserSignedIn()) {
+      // User is NOT signed in -> MUST open Auth Modal!
       notificationManager.info(
         'Sign In Required 🔐',
         'Please sign in or create an account to deposit funds and start playing.'
       );
       authModal.show((user) => {
-        if (user) {
+        if (user && user.id) {
+          currentUser = user;
           setTimeout(() => {
             depositModal.show(targetAmount);
           }, 350);
         }
       });
-    } else {
-      // User is signed in -> direct to Binance Cashier
-      depositModal.show(targetAmount);
+      return;
     }
+
+    // User IS signed in -> direct to Binance Cashier
+    depositModal.show(targetAmount);
   }
 
   window.openDepositModal = (targetAmount = 0) => handleWalletAction(targetAmount);
@@ -231,13 +252,31 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 12. Synchronize Authoritative Profile & Balance from Backend
   try {
-    const profile = await apiClient.getProfile();
-    if (profile && typeof profile.balance === 'number') {
-      setBalance(profile.balance);
-      console.log(`👤 [Auth] Synchronized wallet with server for [${profile.username}]: $${profile.balance} USD`);
+    const token = apiClient.getToken();
+    if (token) {
+      const profile = await apiClient.getProfile();
+      if (profile && profile.id) {
+        currentUser = profile;
+        if (typeof profile.balance === 'number') {
+          setBalance(profile.balance);
+        }
+        console.log(`👤 [Auth] Synchronized wallet with server for [${profile.username}]: $${profile.balance} USD`);
+      } else {
+        // Stale or invalid token on backend -> purge!
+        console.warn('[Auth] Stale or unauthenticated session token detected. Clearing session...');
+        apiClient.setToken(null);
+        socketClient.setAuthToken(null);
+        currentUser = null;
+        setBalance(0);
+      }
+    } else {
+      currentUser = null;
+      setBalance(0);
     }
   } catch (err) {
     console.warn('[Auth] Profile sync initial fetch fallback:', err);
+    currentUser = null;
+    setBalance(0);
   }
 
   console.log('✅ [SkyRush] Aviator Web Engine ready and connected to backend.');

@@ -160,8 +160,8 @@ export class BetController {
   async handleActionClick() {
     if (this.state === 'idle') {
       // Check if user is authenticated
-      const token = localStorage.getItem('skyrush_auth_token');
-      if (!token) {
+      const isAuth = window.isUserAuthenticated ? window.isUserAuthenticated() : Boolean(localStorage.getItem('skyrush_auth_token'));
+      if (!isAuth) {
         notificationManager.info(
           'Sign In Required 🔐',
           'Please sign in or create an account to place bets and win real payouts.'
