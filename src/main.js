@@ -8,6 +8,7 @@ import { ProvablyFairModal } from './ui/provably-fair-modal.js';
 import { AuthModal } from './ui/auth-modal.js';
 import { DepositModal } from './ui/deposit-modal.js';
 import { notificationManager } from './ui/notification-manager.js';
+import confetti from 'canvas-confetti';
 
 // Application State
 let currentBalance = 1000.00;
@@ -179,7 +180,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   socketClient.on('balanceUpdate', (data) => {
     if (data && typeof data.balance === 'number') {
-      setBalance(data.balance);
+      const prev = currentBalance;
+      const next = data.balance;
+      setBalance(next);
+
+      // If balance was credited by Admin approval, trigger celebratory notification
+      if (next > prev) {
+        const credited = next - prev;
+        notificationManager.success(
+          'Deposit Approved! 🚀',
+          `+$${credited.toFixed(2)} USD successfully credited to your flight wallet! New balance: $${next.toFixed(2)} USD.`
+        );
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.2 },
+        });
+      }
     }
   });
 

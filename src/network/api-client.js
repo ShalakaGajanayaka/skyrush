@@ -96,14 +96,15 @@ export class ApiClient {
     });
   }
 
-  async submitDeposit(amount, paymentMethod = 'Crypto/USDT', referenceNumber = '') {
+  async submitDeposit(amount, paymentMethod = 'binance_usdt', referenceNumber = '') {
     const token = this.getToken();
     return this.request('/admin/deposit-request', {
       method: 'POST',
       body: JSON.stringify({
         token,
         amount: Number(amount),
-        paymentMethod,
+        currency: 'USD',
+        paymentMethod: paymentMethod || 'binance_usdt',
         referenceNumber: referenceNumber || `REF-${Date.now().toString(36).toUpperCase()}`,
       }),
     });

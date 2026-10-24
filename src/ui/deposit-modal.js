@@ -1,6 +1,7 @@
 /**
- * SkyRush Deposit & Cashier Modal Component
- * Provides seamless in-game wallet funding without disrupting gameplay.
+ * SkyRush Binance Cashier & Wallet Top-Up Component
+ * Manual Peer-to-Merchant Clearing Model via Binance Pay / USDT.
+ * No automated Binance APIs - verification is physically reviewed and approved by administrators.
  */
 import { apiClient } from '../network/api-client.js';
 import { notificationManager } from './notification-manager.js';
@@ -11,95 +12,185 @@ export class DepositModal {
     this.setBalance = setBalance;
     this.modal = null;
     this.requiredAmount = 0;
+    
+    // Official SkyRush Binance Merchant Configuration
+    this.binancePayId = '548934240';
+    this.merchantNickname = 'SkyRush-Official';
+    this.acceptedCurrency = 'USDT';
+
     this.initUI();
   }
 
   initUI() {
     const modalHtml = `
       <div class="pf-modal-backdrop" id="depositModal" style="display: none; z-index: 10000;">
-        <div class="pf-modal-box" style="max-width: 460px;">
-          <div class="pf-modal-header">
-            <div class="pf-title">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.2">
-                <rect x="2" y="4" width="20" height="16" rx="2"/>
-                <line x1="2" y1="10" x2="22" y2="10"/>
+        <div class="pf-modal-box binance-cashier-modal" style="max-width: 480px;">
+          <!-- Modal Header -->
+          <div class="pf-modal-header" style="border-bottom: 1px solid rgba(240, 185, 11, 0.2);">
+            <div class="pf-title" style="display: flex; align-items: center; gap: 8px;">
+              <svg width="24" height="24" viewBox="0 0 1024 1024" fill="#F0B90B">
+                <path d="M512 0C229.2 0 0 229.2 0 512s229.2 512 512 512 512-229.2 512-512S794.8 0 512 0zm0 188.4l111.9 111.9-111.9 111.9-111.9-111.9L512 188.4zM245.9 454.5l111.9-111.9 111.9 111.9-111.9 111.9-111.9-111.9zm154.2 154.2l111.9-111.9 111.9 111.9-111.9 111.9-111.9-111.9zm266-154.2l111.9-111.9 111.9 111.9-111.9 111.9-111.9-111.9z"/>
               </svg>
-              <span>PILOT CASHIER & TOP-UP</span>
+              <span style="font-weight: 800; letter-spacing: 0.3px; color: #fff;">
+                BINANCE <span style="color: #F0B90B;">CRYPTO DEPOSIT</span>
+              </span>
             </div>
-            <button class="pf-close-btn" id="depositCloseBtn">✕</button>
+            <button class="pf-close-btn" id="depositCloseBtn" title="Close Cashier">✕</button>
           </div>
 
-          <div class="pf-modal-body">
-            <!-- Balance Overview Card -->
+          <div class="pf-modal-body" style="padding-top: 14px;">
+            <!-- Balance Overview Bar -->
             <div class="deposit-balance-overview">
               <div>
                 <div class="overview-label">CURRENT BALANCE</div>
                 <div class="overview-val" id="depositCurrentBal">$0.00 USD</div>
               </div>
               <div id="depositDeficitContainer" style="display: none; text-align: right;">
-                <div class="overview-label" style="color: #f59e0b;">NEEDED FOR BET</div>
-                <div class="overview-val" style="color: #f59e0b;" id="depositNeededVal">$0.00 USD</div>
+                <div class="overview-label" style="color: #F0B90B;">DEFICIT FOR BET</div>
+                <div class="overview-val" style="color: #F0B90B;" id="depositNeededVal">$0.00 USD</div>
               </div>
             </div>
 
-            <!-- Tab Select: Quick Practice vs Official Deposit -->
+            <!-- Tab Switcher -->
             <div class="bet-panel-tabs" style="margin-bottom: 14px;">
-              <button class="tab-btn active" id="tabDepositInstant">⚡ Instant Reload</button>
-              <button class="tab-btn" id="tabDepositOfficial">🏦 Official Deposit</button>
+              <button class="tab-btn active" id="tabDepositBinance">
+                🟡 Official Binance Deposit
+              </button>
+              <button class="tab-btn" id="tabDepositInstant">
+                ⚡ Practice / Demo Top-Up
+              </button>
             </div>
 
-            <!-- TAB 1: Instant Reload (Demo / Play Balance) -->
-            <div id="paneDepositInstant">
-              <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
-                Choose an instant credit amount to immediately resume flight betting:
+            <!-- ============================================== -->
+            <!-- TAB 1: OFFICIAL BINANCE DEPOSIT                -->
+            <!-- ============================================== -->
+            <div id="paneDepositBinance">
+              <!-- Merchant Info Card -->
+              <div class="binance-merchant-card">
+                <div class="merchant-badge-row">
+                  <span class="binance-pill">
+                    <span class="binance-dot"></span> Binance Pay / USDT
+                  </span>
+                  <span class="merchant-verified-tag">✓ Verified Merchant</span>
+                </div>
+
+                <!-- Pay ID Row with 1-Click Copy -->
+                <div class="binance-info-row">
+                  <div>
+                    <div class="info-label">BINANCE PAY ID</div>
+                    <div class="info-value" id="valBinancePayId">${this.binancePayId}</div>
+                  </div>
+                  <button type="button" class="btn-copy-code" id="btnCopyPayId" title="Copy Binance Pay ID">
+                    📋 Copy ID
+                  </button>
+                </div>
+
+                <!-- Recipient Nickname Row -->
+                <div class="binance-info-row" style="margin-top: 8px;">
+                  <div>
+                    <div class="info-label">RECIPIENT NICKNAME</div>
+                    <div class="info-value" style="color: #fff; font-weight: 700;">${this.merchantNickname}</div>
+                  </div>
+                  <button type="button" class="btn-copy-code" id="btnCopyNickname" title="Copy Nickname">
+                    📋 Copy Name
+                  </button>
+                </div>
+              </div>
+
+              <!-- Visual Instructions (Accordion / Step Guide) -->
+              <div class="binance-guide-box">
+                <div class="guide-step">
+                  <span class="step-num">1</span>
+                  <span>Open <b>Binance App</b> ➔ Tap <b>Pay</b> (or Transfer to Pay ID).</span>
+                </div>
+                <div class="guide-step">
+                  <span class="step-num">2</span>
+                  <span>Enter Pay ID <b>${this.binancePayId}</b> & verify name is <b>${this.merchantNickname}</b>.</span>
+                </div>
+                <div class="guide-step">
+                  <span class="step-num">3</span>
+                  <span>Send amount and copy the <b>Binance Order ID / TxID</b> from payment receipt.</span>
+                </div>
+              </div>
+
+              <!-- Form for submitting Binance Transfer Reference -->
+              <form id="formBinanceDeposit" style="margin-top: 14px; display: flex; flex-direction: column; gap: 12px;">
+                <!-- Deposit Amount Selection -->
+                <div class="form-group">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label style="font-size: 12px; color: var(--text-dim); font-weight: 700;">
+                      DEPOSIT AMOUNT (USD / USDT)
+                    </label>
+                    <span style="font-size: 11px; color: #F0B90B; font-weight: 600;">1 USDT = $1.00 USD</span>
+                  </div>
+
+                  <!-- Quick Chips Grid -->
+                  <div class="deposit-chips-grid">
+                    <button type="button" class="deposit-chip-btn" data-amt="10">$10</button>
+                    <button type="button" class="deposit-chip-btn active" data-amt="25">$25</button>
+                    <button type="button" class="deposit-chip-btn" data-amt="50">$50</button>
+                    <button type="button" class="deposit-chip-btn" data-amt="100">$100</button>
+                    <button type="button" class="deposit-chip-btn" data-amt="250">$250</button>
+                  </div>
+
+                  <input type="number" id="inputBinanceAmount" class="bet-amount-input" 
+                    style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 15px; font-weight: 700; color: #F0B90B;" 
+                    value="25" min="1" step="any" required>
+                </div>
+
+                <!-- Binance Order ID / TxID Field -->
+                <div class="form-group">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label style="font-size: 12px; color: var(--text-dim); font-weight: 700;">
+                      BINANCE ORDER ID OR TXID <span style="color: #ef4444;">*</span>
+                    </label>
+                    <span style="font-size: 11px; color: var(--text-muted);">From payment slip</span>
+                  </div>
+                  <input type="text" id="inputBinanceTxId" class="bet-amount-input" 
+                    style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid rgba(240, 185, 11, 0.3); border-radius: var(--radius-sm); font-size: 14px; font-family: monospace; letter-spacing: 0.5px; color: #fff;" 
+                    placeholder="e.g. 21984029148 or 0x3a8f..." required maxlength="96">
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" id="btnSubmitBinanceDeposit" class="btn-binance-action">
+                  ⚡ SUBMIT FOR ADMIN APPROVAL
+                </button>
+              </form>
+
+              <!-- Verification Notice -->
+              <div class="binance-security-footer">
+                🛡️ <b>Physical Verification:</b> SkyRush administrators physically review the Binance account ledger and approve deposits within 2-5 minutes. Your game balance updates in real-time.
+              </div>
+            </div>
+
+            <!-- ============================================== -->
+            <!-- TAB 2: DEMO / PRACTICE RELOAD                  -->
+            <!-- ============================================== -->
+            <div id="paneDepositInstant" style="display: none;">
+              <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+                Reload practice flight funds instantly to test high-speed betting strategies without waiting for physical confirmation:
               </div>
 
               <!-- Quick Presets -->
               <div class="deposit-chips-grid">
-                <button type="button" class="deposit-chip-btn" data-amt="25">+$25</button>
-                <button type="button" class="deposit-chip-btn" data-amt="50">+$50</button>
-                <button type="button" class="deposit-chip-btn active" data-amt="100">+$100</button>
-                <button type="button" class="deposit-chip-btn" data-amt="500">+$500</button>
-                <button type="button" class="deposit-chip-btn" data-amt="1000">+$1,000</button>
+                <button type="button" class="deposit-chip-btn-demo" data-amt="25">+$25</button>
+                <button type="button" class="deposit-chip-btn-demo" data-amt="50">+$50</button>
+                <button type="button" class="deposit-chip-btn-demo active" data-amt="100">+$100</button>
+                <button type="button" class="deposit-chip-btn-demo" data-amt="500">+$500</button>
+                <button type="button" class="deposit-chip-btn-demo" data-amt="1000">+$1,000</button>
               </div>
 
               <div class="form-group" style="margin-top: 12px; margin-bottom: 14px;">
-                <label style="font-size: 12px; color: var(--text-dim); font-weight: 600;">Custom Amount (USD)</label>
-                <input type="number" id="inputInstantAmount" class="bet-amount-input" style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 15px; font-weight: 700; color: #22c55e;" value="100" min="1" step="1">
+                <label style="font-size: 12px; color: var(--text-dim); font-weight: 600;">Custom Practice Amount (USD)</label>
+                <input type="number" id="inputInstantAmount" class="bet-amount-input" 
+                  style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 15px; font-weight: 700; color: #22c55e;" 
+                  value="100" min="1" step="1">
               </div>
 
-              <button type="button" id="btnConfirmInstantReload" class="main-action-btn btn-idle" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 800; height: 46px; background: linear-gradient(135deg, #16a34a, #22c55e); border: none;">
-                ⚡ CREDIT WALLET NOW
+              <button type="button" id="btnConfirmInstantReload" class="main-action-btn btn-idle" 
+                style="width: 100%; padding: 12px; font-size: 14px; font-weight: 800; height: 46px; background: linear-gradient(135deg, #16a34a, #22c55e); border: none;">
+                ⚡ INSTANT RELOAD WALLET
               </button>
-            </div>
-
-            <!-- TAB 2: Official Deposit Request (Admin / Real Gateway) -->
-            <div id="paneDepositOfficial" style="display: none;">
-              <form id="formOfficialDeposit" style="display: flex; flex-direction: column; gap: 10px;">
-                <div class="form-group">
-                  <label style="font-size: 12px; color: var(--text-dim); font-weight: 600;">Deposit Amount ($ USD)</label>
-                  <input type="number" id="officialDepositAmount" class="bet-amount-input" style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 14px;" placeholder="50.00" min="5" step="1" required>
-                </div>
-
-                <div class="form-group">
-                  <label style="font-size: 12px; color: var(--text-dim); font-weight: 600;">Payment Method</label>
-                  <select id="officialDepositMethod" class="bet-amount-input" style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 13px; color: #fff;">
-                    <option value="USDT (TRC20)">USDT (TRC20) - Instant Blockchain</option>
-                    <option value="Binance Pay">Binance Pay (Zero Fees)</option>
-                    <option value="Bank CDM / Transfer">Bank CDM / Wire Transfer</option>
-                    <option value="Credit / Debit Card">Credit / Debit Card</option>
-                  </select>
-                </div>
-
-                <div class="form-group">
-                  <label style="font-size: 12px; color: var(--text-dim); font-weight: 600;">Transaction / Slip Reference</label>
-                  <input type="text" id="officialDepositRef" class="bet-amount-input" style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 13px;" placeholder="e.g. TXID-98314125 or Bank Slip No" required>
-                </div>
-
-                <button type="submit" id="btnSubmitOfficialDeposit" class="main-action-btn btn-idle" style="width: 100%; padding: 10px; margin-top: 4px; font-size: 14px; font-weight: 700; height: 42px;">
-                  SUBMIT FOR APPROVAL
-                </button>
-              </form>
             </div>
           </div>
         </div>
@@ -117,37 +208,59 @@ export class DepositModal {
     });
 
     // Tab switching
+    const tabBinance = document.getElementById('tabDepositBinance');
     const tabInstant = document.getElementById('tabDepositInstant');
-    const tabOfficial = document.getElementById('tabDepositOfficial');
+    const paneBinance = document.getElementById('paneDepositBinance');
     const paneInstant = document.getElementById('paneDepositInstant');
-    const paneOfficial = document.getElementById('paneDepositOfficial');
+
+    tabBinance.addEventListener('click', () => {
+      tabBinance.classList.add('active');
+      tabInstant.classList.remove('active');
+      paneBinance.style.display = 'block';
+      paneInstant.style.display = 'none';
+    });
 
     tabInstant.addEventListener('click', () => {
       tabInstant.classList.add('active');
-      tabOfficial.classList.remove('active');
+      tabBinance.classList.remove('active');
       paneInstant.style.display = 'block';
-      paneOfficial.style.display = 'none';
+      paneBinance.style.display = 'none';
     });
 
-    tabOfficial.addEventListener('click', () => {
-      tabOfficial.classList.add('active');
-      tabInstant.classList.remove('active');
-      paneInstant.style.display = 'none';
-      paneOfficial.style.display = 'block';
-    });
+    // 1-Click Copy Handlers
+    this.setupCopyButton('btnCopyPayId', this.binancePayId, 'Binance Pay ID');
+    this.setupCopyButton('btnCopyNickname', this.merchantNickname, 'Merchant Nickname');
 
-    // Quick chip selectors
-    const inputInstantAmount = document.getElementById('inputInstantAmount');
-    const chips = this.modal.querySelectorAll('.deposit-chip-btn');
-    chips.forEach(chip => {
+    // Quick chip selection for Binance Amount
+    const inputBinanceAmount = document.getElementById('inputBinanceAmount');
+    const chipsBinance = this.modal.querySelectorAll('#paneDepositBinance .deposit-chip-btn');
+    chipsBinance.forEach(chip => {
       chip.addEventListener('click', () => {
-        chips.forEach(c => c.classList.remove('active'));
+        chipsBinance.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        inputBinanceAmount.value = chip.getAttribute('data-amt');
+      });
+    });
+
+    // Quick chip selection for Demo Amount
+    const inputInstantAmount = document.getElementById('inputInstantAmount');
+    const chipsDemo = this.modal.querySelectorAll('#paneDepositInstant .deposit-chip-btn-demo');
+    chipsDemo.forEach(chip => {
+      chip.addEventListener('click', () => {
+        chipsDemo.forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
         inputInstantAmount.value = chip.getAttribute('data-amt');
       });
     });
 
-    // Handle Instant Reload Button
+    // Handle Official Binance Form Submission
+    const formBinance = document.getElementById('formBinanceDeposit');
+    formBinance.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await this.handleBinanceDepositSubmit();
+    });
+
+    // Handle Instant Demo Reload
     const btnInstant = document.getElementById('btnConfirmInstantReload');
     btnInstant.addEventListener('click', () => {
       const amt = Number(inputInstantAmount.value);
@@ -166,47 +279,81 @@ export class DepositModal {
         `Successfully credited +$${amt.toFixed(2)} USD to your flight wallet! Current balance: $${updated.toFixed(2)} USD.`
       );
     });
+  }
 
-    // Handle Official Deposit Submission
-    const formOfficial = document.getElementById('formOfficialDeposit');
-    formOfficial.addEventListener('click', (e) => e.stopPropagation());
-    formOfficial.addEventListener('submit', async (e) => {
+  setupCopyButton(btnId, textToCopy, label) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.addEventListener('click', async (e) => {
       e.preventDefault();
-      const amt = Number(document.getElementById('officialDepositAmount').value);
-      const method = document.getElementById('officialDepositMethod').value;
-      const ref = document.getElementById('officialDepositRef').value.trim();
-
-      if (!amt || amt < 5) {
-        notificationManager.warning('Minimum Deposit', 'Minimum official deposit is $5.00 USD.');
-        return;
-      }
-
-      const btnSubmit = document.getElementById('btnSubmitOfficialDeposit');
-      btnSubmit.disabled = true;
-      btnSubmit.textContent = 'Submitting...';
-
       try {
-        const res = await apiClient.submitDeposit(amt, method, ref);
-        if (res && res.success) {
-          this.hide();
-          notificationManager.success(
-            'Deposit Submitted! 🚀',
-            res.message || 'Your deposit was submitted to administration for verification.'
-          );
-        } else {
-          // If unauthenticated or failed, let user know
-          notificationManager.warning(
-            'Deposit Notice',
-            res.message || 'Deposit received. If running in demo mode, use the Instant Reload tab.'
-          );
-        }
+        await navigator.clipboard.writeText(textToCopy);
+        const originalText = btn.textContent;
+        btn.textContent = '✓ Copied!';
+        btn.classList.add('copied');
+        notificationManager.info('Copied!', `${label} copied to clipboard.`);
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.classList.remove('copied');
+        }, 2000);
       } catch (err) {
-        notificationManager.error('Deposit Error', 'Failed to submit deposit. Please check connection.');
-      } finally {
-        btnSubmit.disabled = false;
-        btnSubmit.textContent = 'SUBMIT FOR APPROVAL';
+        notificationManager.warning('Copy Failed', `Please manually copy: ${textToCopy}`);
       }
     });
+  }
+
+  async handleBinanceDepositSubmit() {
+    const inputAmount = document.getElementById('inputBinanceAmount');
+    const inputTxId = document.getElementById('inputBinanceTxId');
+    const btnSubmit = document.getElementById('btnSubmitBinanceDeposit');
+
+    const amount = Number(inputAmount.value);
+    const reference = inputTxId.value.trim();
+
+    // Validation
+    if (!amount || amount < 1.0) {
+      notificationManager.warning('Minimum Deposit', 'Minimum Binance deposit is $1.00 USD.');
+      return;
+    }
+
+    if (!reference || reference.length < 5) {
+      notificationManager.warning('Order ID Required', 'Please enter a valid Binance Order ID or TxID from your payment slip.');
+      inputTxId.focus();
+      return;
+    }
+
+    btnSubmit.disabled = true;
+    const originalBtnText = btnSubmit.innerHTML;
+    btnSubmit.innerHTML = `⏳ Verifying with Server...`;
+
+    try {
+      const res = await apiClient.submitDeposit(amount, 'binance_usdt', reference);
+
+      if (res && res.success) {
+        this.hide();
+        inputTxId.value = ''; // clear input
+
+        notificationManager.show({
+          type: 'success',
+          title: 'Deposit Submitted! 🟡',
+          message: `Request for $${amount.toFixed(2)} USD (Ref: ${reference.substring(0, 16)}...) sent to SkyRush Admin. Verification takes 2-5 minutes.`,
+          duration: 6500,
+        });
+      } else {
+        const errorMsg = res?.message || 'Failed to submit deposit request. Please try again.';
+        if (errorMsg.toLowerCase().includes('unique') || errorMsg.toLowerCase().includes('reference')) {
+          notificationManager.error('Duplicate Order ID', 'This Binance Order ID has already been submitted.');
+        } else {
+          notificationManager.warning('Deposit Notice', errorMsg);
+        }
+      }
+    } catch (err) {
+      console.error('[DepositModal] Submission failed:', err);
+      notificationManager.error('Connection Error', 'Could not reach server. Please check your network.');
+    } finally {
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = originalBtnText;
+    }
   }
 
   show(targetBetAmount = 0) {
@@ -222,12 +369,13 @@ export class DepositModal {
 
     if (targetBetAmount > cur) {
       defContainer.style.display = 'block';
-      elNeeded.textContent = `$${(targetBetAmount - cur).toFixed(2)} USD`;
-      // Pre-set instant amount to round up the deficit nicely
       const deficit = targetBetAmount - cur;
+      elNeeded.textContent = `$${deficit.toFixed(2)} USD`;
+
+      // Pre-set Binance amount to match or round up the deficit nicely
       const roundAmt = Math.max(10, Math.ceil(deficit / 10) * 10);
-      const inputInstant = document.getElementById('inputInstantAmount');
-      if (inputInstant) inputInstant.value = roundAmt;
+      const inputBinance = document.getElementById('inputBinanceAmount');
+      if (inputBinance) inputBinance.value = roundAmt;
     } else {
       defContainer.style.display = 'none';
     }
