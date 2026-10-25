@@ -160,11 +160,11 @@ export class AuthModal {
               <form id="formLogin" style="display: flex; flex-direction: column; gap: 10px;">
                 <div class="form-group">
                   <label style="font-size: 12px; color: var(--text-dim); font-weight: 600;">Email or Mobile Number</label>
-                  <input type="text" id="loginIdentifier" class="bet-amount-input" style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 14px;" placeholder="e.g. pilot@skyrush.cc" required>
+                  <input type="text" id="loginIdentifier" class="bet-amount-input" style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 14px;" required>
                 </div>
                 <div class="form-group">
                   <label style="font-size: 12px; color: var(--text-dim); font-weight: 600;">Password</label>
-                  <input type="password" id="loginPassword" class="bet-amount-input" style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 14px;" placeholder="••••••••" required>
+                  <input type="password" id="loginPassword" class="bet-amount-input" style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 14px;" required>
                 </div>
                 <button type="submit" class="main-action-btn btn-idle" style="width: 100%; padding: 10px; margin-top: 6px; font-size: 14px; font-weight: 700; height: 42px;">
                   SIGN IN
@@ -175,7 +175,7 @@ export class AuthModal {
               <form id="formRegister" style="display: none; flex-direction: column; gap: 10px;">
                 <div class="form-group">
                   <label style="font-size: 12px; color: var(--text-dim); font-weight: 600;">Email Address</label>
-                  <input type="email" id="regEmail" class="bet-amount-input" style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 14px;" placeholder="e.g. pilot@skyrush.cc" required>
+                  <input type="email" id="regEmail" class="bet-amount-input" style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 14px;" required>
                 </div>
 
                 <!-- Pilot Call-Sign / Username with Shuffle Feature -->
@@ -186,7 +186,7 @@ export class AuthModal {
                       🎲 Shuffle
                     </button>
                   </div>
-                  <input type="text" id="regUsername" class="bet-amount-input" style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 14px;" placeholder="Leave empty for auto-generated name" maxlength="16">
+                  <input type="text" id="regUsername" class="bet-amount-input" style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 14px;" maxlength="16">
                   <div style="font-size: 10px; color: #888; margin-top: 3px;">Letters, numbers and underscores only (3-16 chars)</div>
                 </div>
 
@@ -198,7 +198,7 @@ export class AuthModal {
                     </button>
                   </div>
                   <div style="position: relative; display: flex; align-items: center;">
-                    <input type="password" id="regPassword" class="bet-amount-input" style="width: 100%; text-align: left; padding: 10px 42px 10px 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 14px;" placeholder="••••••••" minlength="8" required>
+                    <input type="password" id="regPassword" class="bet-amount-input" style="width: 100%; text-align: left; padding: 10px 42px 10px 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 14px;" minlength="8" required>
                     <button type="button" id="btnToggleRegPassword" class="auth-pwd-eye-btn" title="Show/Hide Password">
                       👁️
                     </button>
