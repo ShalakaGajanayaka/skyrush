@@ -209,13 +209,6 @@ export class AuthModal {
                 </button>
               </form>
             </div>
-
-            <!-- Quick Dev Pilot Account Button -->
-            <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed rgba(255,255,255,0.1); text-align: center;">
-              <button id="btnQuickPilot" class="chip-btn" style="width: 100%; padding: 8px 12px; background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-color: rgba(59, 130, 246, 0.3);">
-                ⚡ Switch to Funded Pilot Account ($1,000 USD)
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -382,23 +375,6 @@ export class AuthModal {
       } else {
         notificationManager.error('Update Failed', res.message || 'Failed to update username. Name may already be taken.');
       }
-    });
-
-    // Quick Dev Pilot account ($1000 prefunded)
-    document.getElementById('btnQuickPilot').addEventListener('click', async () => {
-      const pilotToken = 'b83bba6036aaf920ce84812f4c0899bc15244c3b28ca51b2';
-      apiClient.setToken(pilotToken);
-      socketClient.setAuthToken(pilotToken);
-      const profile = await apiClient.getProfile();
-      if (profile && profile.id) {
-        if (this.onAuthChanged) this.onAuthChanged(profile);
-        if (typeof this.pendingSuccessCallback === 'function') {
-          const cb = this.pendingSuccessCallback;
-          this.pendingSuccessCallback = null;
-          cb(profile);
-        }
-      }
-      this.hide();
     });
 
     document.getElementById('btnSignOut').addEventListener('click', async () => {
