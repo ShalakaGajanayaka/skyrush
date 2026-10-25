@@ -66,7 +66,7 @@ export default function PendingDepositsTable({
     const m = (method || '').toLowerCase();
     if (m.includes('binance') || m.includes('usdt') || m.includes('crypto')) {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/25">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/12 text-amber-400 border-none">
           <Coins className="w-3 h-3 text-amber-400" />
           <span>Binance / USDT</span>
         </span>
@@ -74,7 +74,7 @@ export default function PendingDepositsTable({
     }
     if (m.includes('ipay')) {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/12 text-emerald-400 border-none">
           <QrCode className="w-3 h-3" />
           <span>iPay LK</span>
         </span>
@@ -82,7 +82,7 @@ export default function PendingDepositsTable({
     }
     if (m.includes('upay')) {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/25">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-500/12 text-purple-400 border-none">
           <Phone className="w-3 h-3" />
           <span>UPay LK</span>
         </span>
@@ -90,14 +90,14 @@ export default function PendingDepositsTable({
     }
     if (m.includes('bank')) {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/25">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-500/12 text-blue-400 border-none">
           <Building2 className="w-3 h-3" />
           <span>Commercial Bank</span>
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-500/10 text-gray-300 border border-gray-500/20">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-500/12 text-gray-300 border-none">
         {method.toUpperCase()}
       </span>
     );
@@ -115,7 +115,7 @@ export default function PendingDepositsTable({
   if (!deposits || deposits.length === 0) {
     return (
       <div className="py-16 text-center">
-        <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-3">
+        <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/15 flex items-center justify-center text-emerald-400 mb-3">
           <CheckCircle2 className="w-6 h-6" />
         </div>
         <h4 className="text-sm font-bold text-white">All Caught Up!</h4>
@@ -151,7 +151,7 @@ export default function PendingDepositsTable({
               </td>
               <td className="py-3.5 px-4">{getChannelBadge(d.paymentMethod)}</td>
               <td className="py-3.5 px-4">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-300 font-mono text-xs font-semibold">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-300 font-mono text-xs font-semibold border-none">
                   <span className="max-w-[170px] truncate" title={d.referenceNumber}>{d.referenceNumber}</span>
                   <button
                     onClick={() => copyRef(d.referenceNumber)}
@@ -203,7 +203,7 @@ export default function PendingDepositsTable({
                   <button
                     disabled={processingId === d.id}
                     onClick={() => handleReject(d)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/25 font-bold text-xs transition-all active:scale-95 disabled:opacity-50"
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 font-bold text-xs border-none transition-all active:scale-95 disabled:opacity-50"
                   >
                     <X className="w-3.5 h-3.5" />
                     <span>Reject</span>
