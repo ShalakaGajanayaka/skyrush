@@ -192,15 +192,15 @@ export default function DashboardPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={openPoolModal}
-            className="px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer"
+            className="px-4 py-2 rounded-full bg-amber-500/10 hover:bg-amber-500/20 active:scale-95 text-amber-400 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer border-none"
           >
             <Sliders className="w-3.5 h-3.5" />
             <span>Manage Pool Buffer</span>
           </button>
 
-          <div className="px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/15 text-emerald-400 text-xs font-semibold flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>PostgreSQL & Redis Sync: Live</span>
+          <div className="px-3.5 py-1.5 rounded-full bg-white/[0.03] text-gray-300 text-xs font-medium flex items-center gap-2 border-none">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400/50" />
+            <span>PostgreSQL & Redis Sync: <strong className="text-emerald-400 font-semibold">Live</strong></span>
           </div>
         </div>
       </div>
