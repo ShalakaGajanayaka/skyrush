@@ -93,13 +93,13 @@ export default function WithdrawalsPage() {
               onClick={() => setFilter(tab.key)}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
                 isActive
-                  ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30 shadow-md shadow-blue-600/10'
-                  : 'text-gray-400 hover:text-gray-200 hover:bg-white/[0.03]'
+                  ? 'bg-blue-500/12 text-blue-400 font-bold border-none'
+                  : 'text-gray-400 hover:text-gray-200 hover:bg-white/[0.04] border-none'
               }`}
             >
               <span>{tab.label}</span>
               {tab.badge !== undefined && (
-                <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-amber-500/15 text-amber-300">
                   {tab.badge}
                 </span>
               )}

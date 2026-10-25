@@ -106,13 +106,13 @@ export default function WithdrawalsTable({
             <Coins className="w-3.5 h-3.5 text-amber-400 shrink-0" />
             <span className="font-semibold text-white">Binance / USDT</span>
             {details.usdtAmount && (
-              <span className="text-[11px] font-bold text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+              <span className="text-[11px] font-bold text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded-md border-none">
                 ≈ {details.usdtAmount} USDT
               </span>
             )}
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-amber-300 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+            <span className="font-mono text-amber-300 font-bold bg-amber-500/10 px-2 py-0.5 rounded-md border-none">
               {payId}
             </span>
             <button
@@ -147,7 +147,7 @@ export default function WithdrawalsTable({
             )}
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-amber-300 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+            <span className="font-mono text-amber-300 font-bold bg-amber-500/10 px-2 py-0.5 rounded-md border-none">
               {details.accountNumber}
             </span>
             <button
@@ -177,7 +177,7 @@ export default function WithdrawalsTable({
           <span className="font-semibold">{method.toUpperCase()} Mobile Wallet</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="font-mono text-purple-200 font-bold bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
+          <span className="font-mono text-purple-200 font-bold bg-purple-500/10 px-2 py-0.5 rounded-md border-none">
             {details.mobileNumber || details.accountNumber}
           </span>
           <button
@@ -240,7 +240,7 @@ export default function WithdrawalsTable({
                     <div className="flex items-center gap-1.5">
                       <span className="font-bold text-white text-sm">{req.username}</span>
                       {req.isMarketing && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded font-extrabold text-[9px] bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md font-bold text-[9px] bg-purple-500/15 text-purple-300 border-none">
                           <Video className="w-2.5 h-2.5 text-purple-400" />
                           <span>PROMO</span>
                         </span>
@@ -276,14 +276,14 @@ export default function WithdrawalsTable({
                   {/* Status Badge */}
                   <td className="py-4 px-4">
                     {isPending && (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/12 text-amber-400 border-none">
                         <Clock className="w-3 h-3 animate-spin" />
                         PENDING PAYOUT
                       </span>
                     )}
                     {isPaid && (
                       <div className="space-y-0.5">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/12 text-emerald-400 border-none">
                           <CheckCircle className="w-3 h-3" />
                           PAID
                         </span>
@@ -296,7 +296,7 @@ export default function WithdrawalsTable({
                     )}
                     {isRejected && (
                       <div className="space-y-0.5">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-500/15 text-red-300 border border-red-500/30">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-500/12 text-rose-400 border-none">
                           <XCircle className="w-3 h-3" />
                           REFUNDED
                         </span>
@@ -309,7 +309,7 @@ export default function WithdrawalsTable({
                     )}
                     {isCancelled && (
                       <div className="space-y-0.5">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-500/12 text-purple-300 border-none">
                           <RotateCcw className="w-3 h-3" />
                           CANCELLED BY PLAYER
                         </span>
@@ -363,7 +363,7 @@ export default function WithdrawalsTable({
                             setConfirmModal({ type: 'reject', withdrawal: req });
                             setAdminNote('');
                           }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 active:scale-95 text-red-300 font-bold rounded-lg text-xs border border-red-500/30 transition-all"
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 active:scale-95 text-rose-300 font-bold rounded-lg text-xs border-none transition-all"
                         >
                           <XCircle className="w-3.5 h-3.5" />
                           <span>Reject & Refund</span>
@@ -388,11 +388,11 @@ export default function WithdrawalsTable({
           <div className="w-full max-w-md bg-[#0f172a] border border-white/10 rounded-2xl p-6 shadow-2xl space-y-5">
             <div className="flex items-center gap-3">
               {confirmModal.type === 'approve' ? (
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-400">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
               ) : (
-                <div className="w-10 h-10 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center text-red-400">
+                <div className="w-10 h-10 rounded-xl bg-rose-500/15 flex items-center justify-center text-rose-400">
                   <AlertTriangle className="w-5 h-5" />
                 </div>
               )}
@@ -419,7 +419,7 @@ export default function WithdrawalsTable({
 
             {/* Promotional Warning Shield if isMarketing */}
             {confirmModal.withdrawal.isMarketing && confirmModal.type === 'approve' && (
-              <div className="p-3.5 bg-purple-500/15 border border-purple-500/30 rounded-xl flex items-start gap-2.5 text-xs text-purple-200">
+              <div className="p-3.5 bg-purple-500/15 rounded-xl flex items-start gap-2.5 text-xs text-purple-200">
                 <Sparkles className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <div className="font-extrabold text-purple-300 uppercase tracking-wider text-[11px]">
