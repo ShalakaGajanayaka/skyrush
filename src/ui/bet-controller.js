@@ -49,7 +49,7 @@ export class BetController {
               <button class="stepper-btn plus-btn">+</button>
             </div>
 
-            <!-- Quick Chips: Pure USD [1, 2, 5, 10, 20, 50, 100, 200, 500] -->
+            <!-- Quick Chips: Pure USD [1, 2, 5, 10, 20, 50, 100, 500] -->
             <div class="quick-chips-row">
               <button class="chip-btn" data-val="1">1</button>
               <button class="chip-btn" data-val="2">2</button>
@@ -58,7 +58,6 @@ export class BetController {
               <button class="chip-btn" data-val="20">20</button>
               <button class="chip-btn" data-val="50">50</button>
               <button class="chip-btn" data-val="100">100</button>
-              <button class="chip-btn" data-val="200">200</button>
               <button class="chip-btn" data-val="500">500</button>
             </div>
 
