@@ -115,7 +115,7 @@ export class DepositModal {
                 </div>
 
                 <!-- Recipient Nickname Row -->
-                <div class="binance-info-row" style="margin-top: 8px;">
+                <div class="binance-info-row" style="margin-top: 5px;">
                   <div>
                     <div class="info-label">RECIPIENT NICKNAME</div>
                     <div class="info-value" style="color: #fff; font-weight: 700;">${this.merchantNickname}</div>
@@ -143,7 +143,7 @@ export class DepositModal {
               </div>
 
               <!-- Form for submitting Binance Transfer Reference -->
-              <form id="formBinanceDeposit" style="margin-top: 14px; display: flex; flex-direction: column; gap: 12px;">
+              <form id="formBinanceDeposit" style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
                 <!-- Deposit Amount Selection -->
                 <div class="form-group">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
