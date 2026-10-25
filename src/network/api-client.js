@@ -51,6 +51,13 @@ export class ApiClient {
           data,
         };
       }
+      if (Array.isArray(data)) {
+        return {
+          success: true,
+          status: response.status,
+          data,
+        };
+      }
       return {
         success: true,
         status: response.status,
@@ -199,6 +206,43 @@ export class ApiClient {
     }).toString();
     return this.request(`/game/provably-fair/verify?${query}`, {
       method: 'GET',
+    });
+  }
+
+  // --- Financial & Flight Records ---
+
+  async getMyHistory() {
+    const token = this.getToken();
+    if (!token) return { success: false, deposits: [], withdrawals: [] };
+    const res = await this.request(`/admin/my-history?token=${encodeURIComponent(token)}`, {
+      method: 'GET',
+    });
+    return {
+      success: !!res.success,
+      deposits: Array.isArray(res.deposits) ? res.deposits : [],
+      withdrawals: Array.isArray(res.withdrawals) ? res.withdrawals : [],
+    };
+  }
+
+  async getBetHistory() {
+    const res = await this.request('/auth/bet-history', {
+      method: 'GET',
+    });
+    if (res.success && Array.isArray(res.data)) {
+      return res.data;
+    }
+    return [];
+  }
+
+  async cancelWithdrawal(withdrawalId) {
+    const token = this.getToken();
+    if (!token) return { success: false, message: 'Please log in' };
+    return this.request('/admin/withdrawal-cancel', {
+      method: 'POST',
+      body: JSON.stringify({
+        token,
+        withdrawalId,
+      }),
     });
   }
 }

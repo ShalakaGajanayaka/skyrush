@@ -100,6 +100,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 6.1 Initialize Deposit & Cashier Modal with Smart Auth Routing
   const depositModal = new DepositModal(getBalance, setBalance);
+  authModal.setCashierOpener((targetTab = 'deposit') => {
+    authModal.hide();
+    setTimeout(() => {
+      depositModal.show(0, targetTab);
+    }, 150);
+  });
 
   function handleWalletAction(targetAmount = 0) {
     // Strictly verify if the user is authenticated

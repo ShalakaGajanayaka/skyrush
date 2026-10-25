@@ -90,18 +90,29 @@ export function generateSecurePassword(length = 10) {
 }
 
 export class AuthModal {
-  constructor(onAuthChanged) {
+  constructor(onAuthChanged, onOpenCashier = null) {
     this.modal = null;
     this.currentUser = null;
     this.onAuthChanged = onAuthChanged;
+    this.onOpenCashier = onOpenCashier;
     this.pendingSuccessCallback = null;
+    this.currentRecordsTab = 'bets'; // 'bets' | 'deposits' | 'withdrawals'
+    this.cachedHistory = {
+      bets: null,
+      deposits: null,
+      withdrawals: null,
+    };
     this.initUI();
+  }
+
+  setCashierOpener(onOpenCashier) {
+    this.onOpenCashier = onOpenCashier;
   }
 
   initUI() {
     const modalHtml = `
       <div class="pf-modal-backdrop" id="authModal" style="display: none; z-index: 10000;">
-        <div class="pf-modal-box" style="max-width: 440px;">
+        <div class="pf-modal-box" style="max-width: 520px; width: 94%;">
           <div class="pf-modal-header">
             <div class="pf-title">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e51b24" stroke-width="2">
@@ -114,37 +125,87 @@ export class AuthModal {
           </div>
 
           <div class="pf-modal-body">
-            <!-- Active Profile Card -->
-            <div id="authProfileCard" style="display: none; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <span style="font-weight: 800; color: #fff; font-size: 16px; letter-spacing: 0.3px;" id="profileUsername">Pilot</span>
-                  <button id="btnEditCallsign" title="Change Pilot Call-Sign" style="background: rgba(255,255,255,0.08); border: 1px solid var(--border-subtle); border-radius: 4px; color: var(--text-dim); cursor: pointer; font-size: 11px; padding: 2px 7px; display: inline-flex; align-items: center; gap: 3px;">
-                    ✏️ Edit
+            <!-- Active Profile & Pilot Dashboard -->
+            <div id="authProfileCard" style="display: none;">
+              <!-- Identity Hero -->
+              <div class="pilot-identity-hero">
+                <div class="pilot-hero-top">
+                  <div class="pilot-callsign-wrap">
+                    <div class="pilot-avatar-icon">🧑‍✈️</div>
+                    <div>
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-weight: 800; color: #fff; font-size: 16px; letter-spacing: 0.3px;" id="profileUsername">Pilot</span>
+                        <button id="btnEditCallsign" title="Change Pilot Call-Sign" class="pilot-edit-btn">
+                          ✏️ Edit
+                        </button>
+                      </div>
+                      <div id="profileEmail" class="pilot-email-text">user@example.com</div>
+                    </div>
+                  </div>
+                  <span id="profileRoleBadge" class="pilot-role-badge">STANDARD</span>
+                </div>
+
+                <!-- Inline Rename / Call-Sign Change Box -->
+                <div id="inlineRenameBox" style="display: none; margin-bottom: 12px; background: rgba(0,0,0,0.35); border: 1px solid rgba(229, 27, 36, 0.3); border-radius: var(--radius-sm); padding: 10px;">
+                  <div style="font-size: 11px; color: var(--text-dim); margin-bottom: 6px; display: flex; justify-content: space-between;">
+                    <span>New Call-Sign (3-16 Alphanumeric):</span>
+                    <button type="button" id="btnShuffleRename" style="background: none; border: none; color: #f59e0b; cursor: pointer; font-size: 11px; font-weight: 700;">🎲 Suggest</button>
+                  </div>
+                  <div style="display: flex; gap: 6px;">
+                    <input type="text" id="inputNewCallsign" class="bet-amount-input" style="flex: 1; text-align: left; padding: 6px 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 13px;" maxlength="16" placeholder="e.g. ShadowFalcon77">
+                    <button type="button" id="btnSaveCallsign" class="chip-btn active" style="padding: 6px 12px; font-size: 12px; font-weight: 700;">Save</button>
+                    <button type="button" id="btnCancelRename" class="chip-btn" style="padding: 6px 10px; font-size: 12px;">✕</button>
+                  </div>
+                </div>
+
+                <!-- Balance & Cashier Quick Actions -->
+                <div class="pilot-balance-row">
+                  <div class="pilot-balance-info">
+                    <span class="pilot-balance-label">FLIGHT WALLET</span>
+                    <span id="profileBalance" class="pilot-balance-value">$0.00 USD</span>
+                  </div>
+                  <div class="pilot-cashier-actions">
+                    <button type="button" id="btnQuickDeposit" class="pilot-quick-btn deposit" title="Deposit funds via Binance Pay">
+                      <svg width="15" height="15" viewBox="0 0 1024 1024" fill="#F0B90B"><path d="M512 0C229.2 0 0 229.2 0 512s229.2 512 512 512 512-229.2 512-512S794.8 0 512 0zm0 188.4l111.9 111.9-111.9 111.9-111.9-111.9L512 188.4zM245.9 454.5l111.9-111.9 111.9 111.9-111.9 111.9-111.9-111.9zm154.2 154.2l111.9-111.9 111.9 111.9-111.9 111.9-111.9-111.9zm266-154.2l111.9-111.9 111.9 111.9-111.9 111.9-111.9-111.9z"/></svg>
+                      <span>Deposit</span>
+                    </button>
+                    <button type="button" id="btnQuickWithdraw" class="pilot-quick-btn withdraw" title="Withdraw funds via Binance">
+                      <span>💸</span>
+                      <span>Withdraw</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- History Records Panel -->
+              <div class="pilot-records-section">
+                <div class="pilot-records-header">
+                  <span class="pilot-records-title">FLIGHT & FINANCIAL RECORDS</span>
+                  <button type="button" id="btnRefreshHistory" class="pilot-refresh-btn" title="Refresh Records">
+                    🔄 Refresh
                   </button>
                 </div>
-                <span id="profileRoleBadge" style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; background: rgba(34, 197, 94, 0.15); color: #22c55e;">STANDARD</span>
+
+                <!-- Segmented Tabs for History -->
+                <div class="pilot-records-tabs">
+                  <button type="button" class="pilot-rec-tab active" data-tab="bets" id="tabRecBets">
+                    🎮 Bet History
+                  </button>
+                  <button type="button" class="pilot-rec-tab" data-tab="deposits" id="tabRecDeposits">
+                    💳 Deposits
+                  </button>
+                  <button type="button" class="pilot-rec-tab" data-tab="withdrawals" id="tabRecWithdrawals">
+                    💸 Withdrawals
+                  </button>
+                </div>
+
+                <!-- Records List Scrollable Container -->
+                <div id="pilotRecordsList" class="pilot-records-list">
+                  <!-- Rendered dynamically -->
+                </div>
               </div>
 
-              <!-- Inline Rename / Call-Sign Change Box -->
-              <div id="inlineRenameBox" style="display: none; margin-bottom: 12px; background: rgba(0,0,0,0.35); border: 1px solid rgba(229, 27, 36, 0.3); border-radius: var(--radius-sm); padding: 10px;">
-                <div style="font-size: 11px; color: var(--text-dim); margin-bottom: 6px; display: flex; justify-content: space-between;">
-                  <span>New Call-Sign (3-16 Alphanumeric):</span>
-                  <button type="button" id="btnShuffleRename" style="background: none; border: none; color: #f59e0b; cursor: pointer; font-size: 11px; font-weight: 700;">🎲 Suggest</button>
-                </div>
-                <div style="display: flex; gap: 6px;">
-                  <input type="text" id="inputNewCallsign" class="bet-amount-input" style="flex: 1; text-align: left; padding: 6px 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 13px;" maxlength="16" placeholder="e.g. ShadowFalcon77">
-                  <button type="button" id="btnSaveCallsign" class="chip-btn active" style="padding: 6px 12px; font-size: 12px; font-weight: 700;">Save</button>
-                  <button type="button" id="btnCancelRename" class="chip-btn" style="padding: 6px 10px; font-size: 12px;">✕</button>
-                </div>
-              </div>
-
-              <div style="font-size: 13px; color: var(--text-dim); margin-bottom: 4px;" id="profileEmail">user@example.com</div>
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05);">
-                <span style="font-size: 12px; color: var(--text-dim);">Flight Wallet Balance:</span>
-                <span style="font-size: 16px; font-weight: 800; color: #22c55e;" id="profileBalance">$0.00 USD</span>
-              </div>
-              <button id="btnSignOut" class="chip-btn" style="width: 100%; margin-top: 12px; padding: 8px; background: rgba(239, 68, 68, 0.15); color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">
+              <button id="btnSignOut" class="pilot-signout-btn">
                 Sign Out / Switch Pilot Account
               </button>
             </div>
@@ -377,9 +438,54 @@ export class AuthModal {
       }
     });
 
+    // Quick Cashier Navigation
+    const btnQuickDeposit = document.getElementById('btnQuickDeposit');
+    if (btnQuickDeposit) {
+      btnQuickDeposit.addEventListener('click', () => {
+        this.hide();
+        if (this.onOpenCashier) {
+          this.onOpenCashier('deposit');
+        }
+      });
+    }
+
+    const btnQuickWithdraw = document.getElementById('btnQuickWithdraw');
+    if (btnQuickWithdraw) {
+      btnQuickWithdraw.addEventListener('click', () => {
+        this.hide();
+        if (this.onOpenCashier) {
+          this.onOpenCashier('withdraw');
+        }
+      });
+    }
+
+    // Refresh History Records
+    const btnRefreshHistory = document.getElementById('btnRefreshHistory');
+    if (btnRefreshHistory) {
+      btnRefreshHistory.addEventListener('click', () => {
+        this.loadHistory(this.currentRecordsTab, true);
+      });
+    }
+
+    // History Segmented Tabs
+    const tabRecBets = document.getElementById('tabRecBets');
+    const tabRecDeposits = document.getElementById('tabRecDeposits');
+    const tabRecWithdrawals = document.getElementById('tabRecWithdrawals');
+
+    if (tabRecBets) {
+      tabRecBets.addEventListener('click', () => this.loadHistory('bets'));
+    }
+    if (tabRecDeposits) {
+      tabRecDeposits.addEventListener('click', () => this.loadHistory('deposits'));
+    }
+    if (tabRecWithdrawals) {
+      tabRecWithdrawals.addEventListener('click', () => this.loadHistory('withdrawals'));
+    }
+
     document.getElementById('btnSignOut').addEventListener('click', async () => {
       await apiClient.logout();
       socketClient.setAuthToken(null);
+      this.cachedHistory = { bets: null, deposits: null, withdrawals: null };
       if (this.onAuthChanged) this.onAuthChanged(null);
       this.renderAuthState(null);
     });
@@ -422,9 +528,283 @@ export class AuthModal {
         roleBadge.style.color = '#22c55e';
         roleBadge.style.background = 'rgba(34, 197, 94, 0.15)';
       }
+
+      // Automatically load current history tab
+      this.loadHistory(this.currentRecordsTab, false);
     } else {
       card.style.display = 'none';
       forms.style.display = 'block';
+      this.cachedHistory = { bets: null, deposits: null, withdrawals: null };
     }
+  }
+
+  async loadHistory(tabName, forceRefresh = false) {
+    this.currentRecordsTab = tabName;
+    const listEl = document.getElementById('pilotRecordsList');
+    if (!listEl) return;
+
+    // Update active tab buttons
+    ['bets', 'deposits', 'withdrawals'].forEach((t) => {
+      const btn = document.getElementById(`tabRec${t.charAt(0).toUpperCase() + t.slice(1)}`);
+      if (btn) {
+        if (t === tabName) btn.classList.add('active');
+        else btn.classList.remove('active');
+      }
+    });
+
+    if (forceRefresh) {
+      this.cachedHistory[tabName] = null;
+    }
+
+    if (this.cachedHistory[tabName]) {
+      this.renderHistoryTab(tabName, this.cachedHistory[tabName]);
+      return;
+    }
+
+    listEl.innerHTML = `
+      <div style="text-align: center; padding: 28px 16px; color: var(--text-dim); font-size: 13px;">
+        <span style="display: inline-block; animation: spin 1s linear infinite; margin-right: 6px;">⏳</span> Loading ${tabName}...
+      </div>
+    `;
+
+    try {
+      if (tabName === 'bets') {
+        const bets = await apiClient.getBetHistory();
+        this.cachedHistory.bets = bets;
+        this.renderHistoryTab('bets', bets);
+      } else {
+        const hist = await apiClient.getMyHistory();
+        this.cachedHistory.deposits = hist.deposits || [];
+        this.cachedHistory.withdrawals = hist.withdrawals || [];
+        this.renderHistoryTab(tabName, this.cachedHistory[tabName] || []);
+      }
+    } catch (err) {
+      console.error('Failed to load history:', err);
+      listEl.innerHTML = `
+        <div style="text-align: center; padding: 24px 16px; color: #ef4444; font-size: 12px;">
+          Failed to load records. <button id="btnRetryLoadHistory" style="background: none; border: none; color: #f59e0b; text-decoration: underline; cursor: pointer; font-weight: 700;">Retry</button>
+        </div>
+      `;
+      const retryBtn = document.getElementById('btnRetryLoadHistory');
+      if (retryBtn) {
+        retryBtn.addEventListener('click', () => this.loadHistory(tabName, true));
+      }
+    }
+  }
+
+  renderHistoryTab(tabName, items) {
+    const listEl = document.getElementById('pilotRecordsList');
+    if (!listEl) return;
+
+    if (!items || items.length === 0) {
+      let emptyMsg = 'No flight records yet.';
+      let emptyHint = 'Place a bet and take to the skies!';
+      if (tabName === 'deposits') {
+        emptyMsg = 'No deposit records found.';
+        emptyHint = 'Top up via Binance Pay to fund your flight wallet.';
+      } else if (tabName === 'withdrawals') {
+        emptyMsg = 'No withdrawal requests found.';
+        emptyHint = 'Your cash-out payouts will appear here.';
+      }
+
+      listEl.innerHTML = `
+        <div style="text-align: center; padding: 28px 16px; color: var(--text-dim);">
+          <div style="font-size: 26px; margin-bottom: 6px; opacity: 0.6;">📭</div>
+          <div style="font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 4px;">${emptyMsg}</div>
+          <div style="font-size: 11px;">${emptyHint}</div>
+        </div>
+      `;
+      return;
+    }
+
+    let html = '';
+    if (tabName === 'bets') {
+      html = items.map((item) => {
+        const betAmt = Number(item.betAmount || 0);
+        const winAmt = Number(item.winAmount || 0);
+        const cashMult = item.cashOutMultiplier ? Number(item.cashOutMultiplier) : null;
+        const crashPt = Number(item.crashPoint || 0);
+        const isWin = cashMult !== null && cashMult > 0 && winAmt > 0;
+        const dateStr = this.formatRecordDate(item.createdAt);
+
+        return `
+          <div class="rec-card">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span class="rec-mult-pill ${isWin ? 'win' : 'loss'}">
+                ${isWin ? `${cashMult.toFixed(2)}x` : `${crashPt.toFixed(2)}x`}
+              </span>
+              <div>
+                <div style="font-size: 12px; font-weight: 700; color: #fff;">
+                  Bet: $${betAmt.toFixed(2)} USD
+                </div>
+                <div style="font-size: 10px; color: var(--text-dim);">
+                  ${isWin ? `Cashed at ${cashMult.toFixed(2)}x (Crashed ${crashPt.toFixed(2)}x)` : `Crashed at ${crashPt.toFixed(2)}x`}
+                </div>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 13px; font-weight: 800; color: ${isWin ? '#22c55e' : '#ef4444'};">
+                ${isWin ? `+$${winAmt.toFixed(2)}` : `-$${betAmt.toFixed(2)}`}
+              </div>
+              <div style="font-size: 10px; color: var(--text-dim); margin-top: 2px;">${dateStr}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } else if (tabName === 'deposits') {
+      html = items.map((item) => {
+        const amt = Number(item.amount || 0);
+        const status = (item.status || 'PENDING').toUpperCase();
+        const ref = item.reference || item.txid || (item.id ? item.id.slice(0, 10) : 'BINANCE');
+        const dateStr = this.formatRecordDate(item.createdAt);
+        let badgeClass = 'status-pending';
+        if (status === 'APPROVED' || status === 'COMPLETED' || status === 'SUCCESS') badgeClass = 'status-approved';
+        else if (status === 'REJECTED' || status === 'FAILED') badgeClass = 'status-rejected';
+
+        return `
+          <div class="rec-card">
+            <div>
+              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                <span style="font-size: 12px; font-weight: 700; color: #fff;">Binance Deposit</span>
+                <span class="rec-badge ${badgeClass}">${status}</span>
+              </div>
+              <div style="font-size: 11px; color: var(--text-dim); display: flex; align-items: center; gap: 4px;">
+                <span>Ref: <strong style="color: #cbd5e1;">${ref}</strong></span>
+                <button type="button" class="btn-copy-ref" data-copy="${ref}" title="Copy Order Reference" style="background: none; border: none; color: #F0B90B; cursor: pointer; font-size: 10px; padding: 0 2px;">📋</button>
+              </div>
+              <div style="font-size: 10px; color: var(--text-dim); margin-top: 2px;">${dateStr}</div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 14px; font-weight: 800; color: #F0B90B;">
+                +$${amt.toFixed(2)} <span style="font-size: 10px;">USD</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } else if (tabName === 'withdrawals') {
+      html = items.map((item) => {
+        const amt = Number(item.amount || 0);
+        const status = (item.status || 'PENDING').toUpperCase();
+        const dateStr = this.formatRecordDate(item.createdAt);
+        let payoutInfo = 'Binance Pay';
+        if (item.payoutDetails) {
+          try {
+            const details = typeof item.payoutDetails === 'string' ? JSON.parse(item.payoutDetails || '{}') : item.payoutDetails;
+            if (details.binancePayId) payoutInfo = `Pay ID: ${details.binancePayId}`;
+            else if (details.usdtAddress) payoutInfo = `USDT: ${details.usdtAddress.slice(0, 6)}...${details.usdtAddress.slice(-4)}`;
+          } catch {}
+        }
+
+        let badgeClass = 'status-pending';
+        if (status === 'PAID' || status === 'APPROVED' || status === 'SUCCESS') badgeClass = 'status-approved';
+        else if (status === 'CANCELLED') badgeClass = 'status-cancelled';
+        else if (status === 'REJECTED' || status === 'FAILED') badgeClass = 'status-rejected';
+
+        const canCancel = status === 'PENDING';
+
+        return `
+          <div class="rec-card" id="withdrawal-card-${item.id}">
+            <div>
+              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                <span style="font-size: 12px; font-weight: 700; color: #fff;">Binance Withdrawal</span>
+                <span class="rec-badge ${badgeClass}">${status}</span>
+              </div>
+              <div style="font-size: 11px; color: var(--text-dim);">${payoutInfo}</div>
+              <div style="font-size: 10px; color: var(--text-dim); margin-top: 2px;">${dateStr}</div>
+            </div>
+            <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+              <div style="font-size: 14px; font-weight: 800; color: #ef4444;">
+                -$${amt.toFixed(2)} <span style="font-size: 10px;">USD</span>
+              </div>
+              ${canCancel ? `
+                <button type="button" class="btn-cancel-withdrawal" data-id="${item.id}" data-amount="${amt.toFixed(2)}">
+                  ✕ Cancel Request
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    listEl.innerHTML = html;
+
+    // Attach 1-click copy handler
+    listEl.querySelectorAll('.btn-copy-ref').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const text = btn.getAttribute('data-copy');
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(() => {
+            notificationManager.success('Copied', `Copied reference: ${text}`);
+            const orig = btn.textContent;
+            btn.textContent = '✓';
+            setTimeout(() => { btn.textContent = orig; }, 1500);
+          });
+        }
+      });
+    });
+
+    // Attach Cancel Withdrawal handlers
+    listEl.querySelectorAll('.btn-cancel-withdrawal').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        const amount = btn.getAttribute('data-amount');
+
+        if (!confirm(`Cancel this $${amount} USD withdrawal request and restore funds to your flight wallet balance?`)) {
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Cancelling...';
+
+        try {
+          const res = await apiClient.cancelWithdrawal(id);
+          if (res.success) {
+            notificationManager.success(
+              'Withdrawal Cancelled 💸',
+              `$${amount} USD has been restored to your playable wallet balance!`
+            );
+            if (typeof res.newBalance === 'number') {
+              if (this.currentUser) {
+                this.currentUser.balance = res.newBalance;
+              }
+              if (this.onAuthChanged) {
+                this.onAuthChanged(this.currentUser);
+              }
+              const balEl = document.getElementById('profileBalance');
+              if (balEl) balEl.textContent = `$${Number(res.newBalance).toFixed(2)} USD`;
+            }
+            // Reload withdrawals
+            this.loadHistory('withdrawals', true);
+          } else {
+            notificationManager.error('Cancellation Failed', res.message || 'Could not cancel withdrawal.');
+            btn.disabled = false;
+            btn.textContent = '✕ Cancel Request';
+          }
+        } catch (err) {
+          console.error('Error cancelling withdrawal:', err);
+          notificationManager.error('Error', 'Network or server error while cancelling withdrawal.');
+          btn.disabled = false;
+          btn.textContent = '✕ Cancel Request';
+        }
+      });
+    });
+  }
+
+  formatRecordDate(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return String(dateStr);
+    const now = new Date();
+    const isToday = d.toDateString() === now.toDateString();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const time = `${hours}:${minutes}`;
+    if (isToday) return `Today ${time}`;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${months[d.getMonth()]} ${d.getDate()}, ${time}`;
   }
 }
