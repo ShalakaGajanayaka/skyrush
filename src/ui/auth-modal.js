@@ -112,7 +112,7 @@ export class AuthModal {
   initUI() {
     const modalHtml = `
       <div class="pf-modal-backdrop" id="authModal" style="display: none; z-index: 10000;">
-        <div class="pf-modal-box" style="max-width: 520px; width: 94%;">
+        <div class="pf-modal-box pilot-station-modal" style="max-width: 520px; width: 94%;">
           <div class="pf-modal-header">
             <div class="pf-title">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e51b24" stroke-width="2">
