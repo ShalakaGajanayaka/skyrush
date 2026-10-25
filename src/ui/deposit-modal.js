@@ -435,6 +435,11 @@ export class DepositModal {
         this.hide();
         inputTxId.value = ''; // clear input
 
+        // Invalidate and trigger fresh reload in Pilot Station
+        window.dispatchEvent(new CustomEvent('skyrush:financial-update', {
+          detail: { type: 'deposit', deposit: res.deposit }
+        }));
+
         notificationManager.show({
           type: 'success',
           title: 'Deposit Submitted! 🟡',
@@ -528,6 +533,11 @@ export class DepositModal {
           message: `Your withdrawal request for $${amount.toFixed(2)} USD is under review. Funds are secured in escrow.`,
           duration: 7000,
         });
+
+        // Invalidate and trigger fresh reload in Pilot Station
+        window.dispatchEvent(new CustomEvent('skyrush:financial-update', {
+          detail: { type: 'withdrawal', withdrawal: res.withdrawal }
+        }));
 
         // Sync fresh profile in background
         apiClient.getProfile().then(p => {

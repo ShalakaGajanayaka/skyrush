@@ -467,20 +467,25 @@ export class AuthModal {
       });
     }
 
-    // History Segmented Tabs
+    // History Segmented Tabs - always fetch fresh records on click
     const tabRecBets = document.getElementById('tabRecBets');
     const tabRecDeposits = document.getElementById('tabRecDeposits');
     const tabRecWithdrawals = document.getElementById('tabRecWithdrawals');
 
     if (tabRecBets) {
-      tabRecBets.addEventListener('click', () => this.loadHistory('bets'));
+      tabRecBets.addEventListener('click', () => this.loadHistory('bets', true));
     }
     if (tabRecDeposits) {
-      tabRecDeposits.addEventListener('click', () => this.loadHistory('deposits'));
+      tabRecDeposits.addEventListener('click', () => this.loadHistory('deposits', true));
     }
     if (tabRecWithdrawals) {
-      tabRecWithdrawals.addEventListener('click', () => this.loadHistory('withdrawals'));
+      tabRecWithdrawals.addEventListener('click', () => this.loadHistory('withdrawals', true));
     }
+
+    // Global listener for deposit / withdrawal submissions from cashier
+    window.addEventListener('skyrush:financial-update', (e) => {
+      this.invalidateHistory();
+    });
 
     document.getElementById('btnSignOut').addEventListener('click', async () => {
       await apiClient.logout();
@@ -529,12 +534,24 @@ export class AuthModal {
         roleBadge.style.background = 'rgba(34, 197, 94, 0.15)';
       }
 
-      // Automatically load current history tab
-      this.loadHistory(this.currentRecordsTab, false);
+      // Automatically load current history tab with live data
+      this.loadHistory(this.currentRecordsTab, true);
     } else {
       card.style.display = 'none';
       forms.style.display = 'block';
       this.cachedHistory = { bets: null, deposits: null, withdrawals: null };
+    }
+  }
+
+  invalidateHistory(targetTab = null) {
+    if (targetTab) {
+      this.cachedHistory[targetTab] = null;
+    } else {
+      this.cachedHistory = { bets: null, deposits: null, withdrawals: null };
+    }
+    const card = document.getElementById('authProfileCard');
+    if (card && card.style.display !== 'none') {
+      this.loadHistory(this.currentRecordsTab, true);
     }
   }
 
@@ -556,7 +573,8 @@ export class AuthModal {
       this.cachedHistory[tabName] = null;
     }
 
-    if (this.cachedHistory[tabName]) {
+    // Only use cached results if forceRefresh is false AND the cache contains existing non-empty records
+    if (!forceRefresh && Array.isArray(this.cachedHistory[tabName]) && this.cachedHistory[tabName].length > 0) {
       this.renderHistoryTab(tabName, this.cachedHistory[tabName]);
       return;
     }
@@ -655,7 +673,7 @@ export class AuthModal {
       html = items.map((item) => {
         const amt = Number(item.amount || 0);
         const status = (item.status || 'PENDING').toUpperCase();
-        const ref = item.reference || item.txid || (item.id ? item.id.slice(0, 10) : 'BINANCE');
+        const ref = item.referenceNumber || item.reference || item.txid || (item.id ? item.id.slice(0, 10) : 'BINANCE');
         const dateStr = this.formatRecordDate(item.createdAt);
         let badgeClass = 'status-pending';
         if (status === 'APPROVED' || status === 'COMPLETED' || status === 'SUCCESS') badgeClass = 'status-approved';
