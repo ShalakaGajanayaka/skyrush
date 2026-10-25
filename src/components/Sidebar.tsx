@@ -106,8 +106,8 @@ export default function Sidebar({ pendingCount = 0, pendingWithdrawalCount = 0, 
                 href={item.href}
                 className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                   isActive
-                    ? 'bg-blue-600/15 text-blue-400 border border-blue-500/30 shadow-sm shadow-blue-500/10'
-                    : 'text-gray-400 hover:text-gray-200 hover:bg-white/[0.03]'
+                    ? 'bg-blue-500/10 text-blue-400 font-bold'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -115,7 +115,7 @@ export default function Sidebar({ pendingCount = 0, pendingWithdrawalCount = 0, 
                   <span>{item.label}</span>
                 </div>
                 {item.badge !== undefined && (
-                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse">
+                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-500/15 text-amber-300">
                     {item.badge}
                   </span>
                 )}
@@ -126,7 +126,7 @@ export default function Sidebar({ pendingCount = 0, pendingWithdrawalCount = 0, 
       </div>
 
       {/* System Status Footer */}
-      <div className="p-4 m-3 rounded-xl bg-white/[0.02] border border-white/5">
+      <div className="p-4 m-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
         <div className="flex items-center gap-2 text-[11px] font-medium text-emerald-400">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -155,7 +155,7 @@ export default function Sidebar({ pendingCount = 0, pendingWithdrawalCount = 0, 
             localStorage.removeItem('admin_token');
             window.location.reload();
           }}
-          className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-red-400 bg-red-400/10 hover:bg-red-400/20 rounded-lg transition-colors border border-red-400/20"
+          className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-red-400/80 hover:text-red-400 bg-transparent hover:bg-red-500/10 rounded-lg transition-all"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
           Log Out

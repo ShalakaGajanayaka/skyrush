@@ -57,11 +57,9 @@ export default function MetricCard({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl bg-[#0f172a]/60 backdrop-blur-xl border ${c.border} p-5 shadow-lg shadow-black/20 transition-all hover:translate-y-[-2px] ${
-        highlight ? 'ring-2 ring-amber-500/30' : ''
-      }`}
+      className="relative overflow-hidden rounded-2xl bg-[#0d1424]/80 backdrop-blur-xl border border-white/[0.05] hover:border-white/[0.12] p-5 shadow-lg shadow-black/30 transition-all hover:translate-y-[-1px]"
     >
-      <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${c.glow}`} />
+      <div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${c.glow}`} />
 
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">

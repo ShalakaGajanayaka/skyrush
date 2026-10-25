@@ -32,10 +32,10 @@ export default function Header({
         <button
           onClick={onToggleSound}
           title={soundEnabled ? 'Deposit Alert Sound On' : 'Deposit Alert Sound Muted'}
-          className={`p-2 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all ${
+          className={`p-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
             soundEnabled
-              ? 'bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500/20'
-              : 'bg-white/5 border-white/10 text-gray-400 hover:text-gray-300'
+              ? 'bg-blue-500/10 border border-blue-500/15 text-blue-400 hover:bg-blue-500/15'
+              : 'bg-white/[0.04] border border-white/[0.05] text-gray-400 hover:text-gray-300'
           }`}
         >
           {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}

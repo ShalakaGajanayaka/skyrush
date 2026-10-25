@@ -192,13 +192,13 @@ export default function DashboardPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={openPoolModal}
-            className="px-4 py-2 rounded-full bg-gradient-to-r from-amber-500/20 to-amber-600/10 border border-amber-500/40 text-amber-400 hover:border-amber-400 hover:from-amber-500/30 text-xs font-bold flex items-center gap-2 transition-all shadow-lg shadow-amber-500/10 cursor-pointer"
+            className="px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer"
           >
             <Sliders className="w-3.5 h-3.5" />
             <span>Manage Pool Buffer</span>
           </button>
 
-          <div className="px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-semibold flex items-center gap-2">
+          <div className="px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/15 text-emerald-400 text-xs font-semibold flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span>PostgreSQL & Redis Sync: Live</span>
           </div>
@@ -324,7 +324,7 @@ export default function DashboardPage() {
         {/* Right 1 Col: Quick Info & Recent Activity */}
         <div className="space-y-6">
           {/* Quick Notice Card */}
-          <div className="rounded-2xl bg-gradient-to-br from-blue-900/20 to-indigo-900/20 border border-blue-500/20 p-5 backdrop-blur-xl">
+          <div className="rounded-2xl bg-gradient-to-br from-blue-950/20 to-indigo-950/20 border border-blue-500/10 p-5 backdrop-blur-xl">
             <div className="flex items-center gap-2 text-blue-400 font-bold text-xs mb-2">
               <ShieldAlert className="w-4 h-4" />
               <span>Real-Time Operator Verification</span>
