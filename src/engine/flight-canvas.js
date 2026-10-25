@@ -779,35 +779,46 @@ export class FlightCanvas {
 
       ctx.restore();
     } else if (this.status === 'waiting') {
-      const labelFontSize = Math.min(18, Math.max(14, w * 0.024));
-      ctx.font = `600 ${labelFontSize}px 'Outfit', 'Inter', -apple-system, sans-serif`;
-      ctx.fillStyle = '#94a3b8';
-      ctx.shadowBlur = 0;
-      ctx.fillText('NEXT ROUND IN', cx, cy - 32);
-
-      const countFontSize = Math.min(64, Math.max(42, w * 0.07));
-      ctx.font = `800 ${countFontSize}px 'Outfit', 'Inter', -apple-system, sans-serif`;
-      ctx.fillStyle = '#ffffff';
-      ctx.shadowColor = 'rgba(255, 255, 255, 0.3)';
-      ctx.shadowBlur = 10;
-      ctx.fillText(`${Math.max(0, this.countdown)}`, cx, cy + 12);
+      const ringCenterY = cy + 16;
+      const ringRadius = 40;
 
       ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // 1. "NEXT ROUND IN" Label (Clean separation above ring)
+      const labelFontSize = Math.min(16, Math.max(13, w * 0.022));
+      ctx.font = `700 ${labelFontSize}px 'Outfit', 'Inter', -apple-system, sans-serif`;
+      ctx.fillStyle = '#94a3b8';
+      ctx.shadowBlur = 0;
+      ctx.fillText('NEXT ROUND IN', cx, cy - 48);
+
+      // 2. Countdown Number (Centered cleanly inside ring)
+      const countFontSize = Math.min(54, Math.max(38, w * 0.065));
+      ctx.font = `800 ${countFontSize}px 'Outfit', 'Inter', -apple-system, sans-serif`;
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(255, 255, 255, 0.35)';
+      ctx.shadowBlur = 12;
+      ctx.fillText(`${Math.max(0, this.countdown)}`, cx, ringCenterY + 1);
+
+      // 3. Background Track Ring
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
       ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.arc(cx, cy + 12, 42, 0, Math.PI * 2);
+      ctx.arc(cx, ringCenterY, ringRadius, 0, Math.PI * 2);
       ctx.stroke();
 
+      // 4. Progress Arc (Red glow, completely separated from text)
       const progress = Math.max(0, Math.min(1, this.countdown / 10));
       ctx.strokeStyle = '#e51b24';
       ctx.shadowColor = '#e51b24';
-      ctx.shadowBlur = 10;
+      ctx.shadowBlur = 12;
       ctx.lineWidth = 4.5;
       ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.arc(cx, cy + 12, 42, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * (1 - progress)));
+      ctx.arc(cx, ringCenterY, ringRadius, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * (1 - progress)));
       ctx.stroke();
+
       ctx.restore();
     }
 
