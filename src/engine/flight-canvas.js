@@ -224,8 +224,8 @@ export class FlightCanvas {
   updateAuthoritativeMultiplier(targetMultiplier) {
     if (this.status === 'playing') {
       const diff = targetMultiplier - this.multiplier;
-      if (Math.abs(diff) > 0.05) {
-        this.multiplier += diff * 0.35;
+      if (Math.abs(diff) > 0.02) {
+        this.multiplier += diff * 0.5;
       } else {
         this.multiplier = targetMultiplier;
       }
@@ -259,9 +259,13 @@ export class FlightCanvas {
       const elapsedSec = Math.max(0, (Date.now() - this.startTime) / 1000);
       this.flightTime = elapsedSec;
 
-      const targetM = 1.00 + (elapsedSec * 0.08) + Math.pow(elapsedSec * 0.28, 1.75);
-      if (targetM > this.multiplier) {
-        this.multiplier += (targetM - this.multiplier) * 0.25;
+      // Industry standard smooth exponential progression: e^(0.095 * t)
+      // Identical to Game Server (game.service.ts) and Flutter client (game_screen.dart)
+      const targetM = Math.max(1.0, Math.exp(0.095 * elapsedSec));
+      if (Math.abs(targetM - this.multiplier) > 0.01) {
+        this.multiplier += (targetM - this.multiplier) * 0.35;
+      } else {
+        this.multiplier = targetM;
       }
 
       // Smooth flight ascent towards high sky (climbs to ~65% of screen height)
