@@ -419,15 +419,15 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Multiplier capacity indicator */}
+              {/* Solvency & Provably Fair Indicator */}
               <div className="mt-3 pt-3 border-t border-white/5 flex items-center gap-2 text-[11px] text-gray-300">
                 <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span>
-                  Current buffer safely supports up to{' '}
+                  Standard room operates on <strong className="text-emerald-400">100% Provably Fair</strong> cryptographic RNG (97.0% RTP). Active reserve covers up to{' '}
                   <strong className="text-amber-400">
                     {((stats.globalPool || 0) / 2).toFixed(1)}x multiplier
                   </strong>{' '}
-                  on a $2.00 USD single bet before triggering dynamic liability crash.
+                  instant cashout on a $2.00 USD single bet with full platform solvency.
                 </span>
               </div>
             </div>
