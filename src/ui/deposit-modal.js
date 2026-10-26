@@ -546,10 +546,20 @@ export class DepositModal {
           }
         }).catch(() => {});
       } else {
-        notificationManager.error(
-          'Withdrawal Failed',
-          res?.message || 'Failed to submit withdrawal request. Please check your balance and pending limits.'
-        );
+        const errorMsg = res?.message || 'Failed to submit withdrawal request. Please check your balance and pending limits.';
+        if (errorMsg.toLowerCase().includes('wagering') || errorMsg.toLowerCase().includes('flight bet') || errorMsg.toLowerCase().includes('flight round')) {
+          notificationManager.show({
+            type: 'warning',
+            title: '🛫 Flight Bet Required',
+            message: errorMsg,
+            duration: 8000,
+          });
+        } else {
+          notificationManager.error(
+            'Withdrawal Failed',
+            errorMsg
+          );
+        }
       }
     } catch (err) {
       console.error('[DepositModal] Withdrawal submission failed:', err);
