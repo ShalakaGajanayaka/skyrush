@@ -354,14 +354,30 @@ export class BetController {
         this.btnSub.textContent = `$${currentWin} USD`;
       }
 
-      // Check auto-cashout client-side fallback if server event slightly delayed
-      if (this.autoCashout && multiplier >= this.autoCashoutMultiplier) {
-        this.triggerCashout(this.autoCashoutMultiplier);
+      // When reaching auto-cashout target, give server-authoritative auto-cashout priority
+      if (this.autoCashout && multiplier >= this.autoCashoutMultiplier && this.state === 'placed') {
+        this.btnTitle.textContent = `CASHING OUT...`;
+        this.btnSub.textContent = `@ ${this.autoCashoutMultiplier.toFixed(2)}x`;
+        this.btnAction.classList.add('disabled');
+
+        // Fallback: If server socket event is delayed by more than 1200ms, trigger manual fallback
+        if (!this._autoCashoutFallbackTimer) {
+          this._autoCashoutFallbackTimer = setTimeout(() => {
+            if (this.state === 'placed') {
+              this.triggerCashout(this.autoCashoutMultiplier);
+            }
+            this._autoCashoutFallbackTimer = null;
+          }, 1200);
+        }
       }
     }
   }
 
   onAutoCashedOut(data) {
+    if (this._autoCashoutFallbackTimer) {
+      clearTimeout(this._autoCashoutFallbackTimer);
+      this._autoCashoutFallbackTimer = null;
+    }
     if (this.state !== 'placed' && this.state !== 'queued') return;
     const mult = Number(data.multiplier) || this.autoCashoutMultiplier || 2.0;
     const finalWin = Number(data.winAmount) || Number((this.placedAmount * mult).toFixed(2));
@@ -394,6 +410,10 @@ export class BetController {
   }
 
   onRoundCrashed(finalMultiplier) {
+    if (this._autoCashoutFallbackTimer) {
+      clearTimeout(this._autoCashoutFallbackTimer);
+      this._autoCashoutFallbackTimer = null;
+    }
     if (this.state === 'placed') {
       // Player lost
       this.state = 'idle';

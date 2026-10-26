@@ -135,6 +135,16 @@ export class SocketClient {
       if (isMarketing && incomingRoom === 'standard') return;
       if (!isMarketing && incomingRoom === 'marketing') return;
 
+      // Continuously calibrate server clock offset if server timestamp is present
+      if (data.serverTime && typeof data.serverTime === 'number') {
+        const measuredOffset = data.serverTime - Date.now();
+        if (this.serverClockOffset === 0) {
+          this.serverClockOffset = measuredOffset;
+        } else {
+          this.serverClockOffset = (this.serverClockOffset * 0.85) + (measuredOffset * 0.15);
+        }
+      }
+
       this.notify('gameState', data);
     });
 
@@ -145,6 +155,16 @@ export class SocketClient {
       const isMarketing = this.currentUser?.isMarketing === true;
       if (isMarketing && incomingRoom === 'standard') return;
       if (!isMarketing && incomingRoom === 'marketing') return;
+
+      // Passive clock offset micro-refinement
+      if (data.serverTime && typeof data.serverTime === 'number') {
+        const measuredOffset = data.serverTime - Date.now();
+        if (this.serverClockOffset === 0) {
+          this.serverClockOffset = measuredOffset;
+        } else {
+          this.serverClockOffset = (this.serverClockOffset * 0.98) + (measuredOffset * 0.02);
+        }
+      }
 
       this.notify('flightSync', data);
     });
@@ -177,6 +197,13 @@ export class SocketClient {
     if (this.socket && this.isConnected) {
       this.socket.emit('pingSync', { clientSendTime: Date.now() });
     }
+  }
+
+  /**
+   * Returns authoritative server timestamp synchronized via Cristian's algorithm + moving average
+   */
+  getServerTime() {
+    return Date.now() + this.serverClockOffset;
   }
 
   on(event, callback) {

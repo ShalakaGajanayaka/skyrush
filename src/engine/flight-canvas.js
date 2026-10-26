@@ -5,6 +5,7 @@ export class FlightCanvas {
     this.canvas = canvasElement;
     this.ctx = canvasElement.getContext('2d', { alpha: false });
     this.options = options;
+    this.clockProvider = typeof options.clockProvider === 'function' ? options.clockProvider : (() => Date.now());
 
     // Dimensions
     this.width = 800;
@@ -146,12 +147,22 @@ export class FlightCanvas {
     this.crashVelY = 0;
   }
 
+  setClockProvider(fn) {
+    if (typeof fn === 'function') {
+      this.clockProvider = fn;
+    }
+  }
+
+  getSyncedTime() {
+    return typeof this.clockProvider === 'function' ? this.clockProvider() : Date.now();
+  }
+
   setPlayingState(startTime, initialMultiplier = 1.00) {
     if (this.status !== 'playing') {
       soundManager.startFlightSound();
     }
     this.status = 'playing';
-    this.startTime = startTime || Date.now();
+    this.startTime = startTime || this.getSyncedTime();
     this.multiplier = initialMultiplier;
     this.crashPoint = null;
     this.particles = [];
@@ -224,10 +235,10 @@ export class FlightCanvas {
   updateAuthoritativeMultiplier(targetMultiplier) {
     if (this.status === 'playing') {
       const diff = targetMultiplier - this.multiplier;
-      if (Math.abs(diff) > 0.02) {
-        this.multiplier += diff * 0.5;
-      } else {
-        this.multiplier = targetMultiplier;
+      // Soft damping: if diff is micro (<=0.03x), allow smooth local 60fps exponential loop to run undisturbed.
+      // If diff is noticeable, gently nudge towards authoritative tick without harsh visual snapping.
+      if (Math.abs(diff) > 0.03) {
+        this.multiplier += diff * 0.35;
       }
       soundManager.updateFlightMultiplier(this.multiplier);
     }
@@ -256,14 +267,18 @@ export class FlightCanvas {
       : 0.4;
 
     if (this.status === 'playing') {
-      const elapsedSec = Math.max(0, (Date.now() - this.startTime) / 1000);
+      const now = this.getSyncedTime();
+      const elapsedSec = Math.max(0, (now - this.startTime) / 1000);
       this.flightTime = elapsedSec;
 
       // Industry standard smooth exponential progression: e^(0.095 * t)
       // Identical to Game Server (game.service.ts) and Flutter client (game_screen.dart)
       const targetM = Math.max(1.0, Math.exp(0.095 * elapsedSec));
-      if (Math.abs(targetM - this.multiplier) > 0.01) {
-        this.multiplier += (targetM - this.multiplier) * 0.35;
+      const diff = targetM - this.multiplier;
+
+      // Frame-rate independent responsive interpolation: adapts smoothly at 60/120fps without lag behind true flight time
+      if (Math.abs(diff) > 0.005) {
+        this.multiplier += diff * Math.min(1.0, dt * 18);
       } else {
         this.multiplier = targetM;
       }

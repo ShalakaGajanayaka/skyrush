@@ -42,9 +42,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.addEventListener('click', initAudioOnGesture);
   window.addEventListener('keydown', initAudioOnGesture);
 
-  // 2. Initialize Hardware-Accelerated Flight Canvas
+  // 2. Initialize Hardware-Accelerated Flight Canvas with Server-Authoritative Clock Synchronization
   const canvasEl = document.getElementById('flightCanvas');
-  const flightCanvas = new FlightCanvas(canvasEl);
+  const flightCanvas = new FlightCanvas(canvasEl, {
+    clockProvider: () => socketClient.getServerTime(),
+  });
 
   // 3. Initialize Provably Fair Modal
   const pfModal = new ProvablyFairModal();
