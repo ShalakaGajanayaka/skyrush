@@ -732,11 +732,11 @@ export class AuthModal {
               <div style="font-size: 10px; color: var(--text-dim); margin-top: 2px;">${dateStr}</div>
             </div>
             <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
-              <div style="font-size: 14px; font-weight: 800; color: #ef4444;">
-                -$${amt.toFixed(2)} <span style="font-size: 10px;">USD</span>
+              <div style="font-size: 14px; font-weight: 800; color: #10b981; display: flex; align-items: center; gap: 3px;">
+                <span style="font-size: 13px; opacity: 0.85;">↗</span> $${amt.toFixed(2)} <span style="font-size: 10px; color: var(--text-dim); font-weight: 600;">USD</span>
               </div>
               ${canCancel ? `
-                <button type="button" class="btn-cancel-withdrawal" data-id="${item.id}" data-amount="${amt.toFixed(2)}">
+                <button type="button" class="btn-cancel-withdrawal" data-id="${item.id}" data-amount="${amt.toFixed(2)}" title="Cancel this pending payout request">
                   ✕ Cancel Request
                 </button>
               ` : ''}
