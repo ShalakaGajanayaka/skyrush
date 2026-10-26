@@ -26,6 +26,10 @@ export class SocketClient {
       betCancelled: [],
       balanceUpdate: [],
       userSubscribed: [],
+      maintenanceNotice: [],
+      maintenanceCancelled: [],
+      maintenanceActive: [],
+      systemAnnouncement: [],
     };
   }
 
@@ -184,6 +188,12 @@ export class SocketClient {
 
     // Auto cashout success event
     this.socket.on('autoCashoutSuccess', (data) => this.notify('autoCashoutSuccess', data));
+
+    // System Maintenance & Global Announcements
+    this.socket.on('maintenanceNotice', (data) => this.notify('maintenanceNotice', data));
+    this.socket.on('maintenanceCancelled', (data) => this.notify('maintenanceCancelled', data));
+    this.socket.on('maintenanceActive', (data) => this.notify('maintenanceActive', data));
+    this.socket.on('systemAnnouncement', (data) => this.notify('systemAnnouncement', data));
 
     // Recurring clock sync (every 15s)
     setInterval(() => {

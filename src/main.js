@@ -8,6 +8,7 @@ import { ProvablyFairModal } from './ui/provably-fair-modal.js';
 import { AuthModal } from './ui/auth-modal.js';
 import { DepositModal } from './ui/deposit-modal.js';
 import { notificationManager } from './ui/notification-manager.js';
+import { MaintenanceBanner } from './ui/maintenance-banner.js';
 import confetti from 'canvas-confetti';
 
 // Application State
@@ -47,6 +48,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const flightCanvas = new FlightCanvas(canvasEl, {
     clockProvider: () => socketClient.getServerTime(),
   });
+
+  // 2.1 Initialize In-Game Maintenance Banner & Modal
+  const maintenanceBanner = new MaintenanceBanner(socketClient);
 
   // 3. Initialize Provably Fair Modal
   const pfModal = new ProvablyFairModal();
