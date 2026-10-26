@@ -86,3 +86,11 @@ export interface PoolAuditLog {
   note?: string;
   createdAt: string;
 }
+
+export interface MaintenanceStatus {
+  isScheduled: boolean;
+  isActive: boolean;
+  targetTime: number | null;
+  remainingSeconds: number;
+  message: string;
+}

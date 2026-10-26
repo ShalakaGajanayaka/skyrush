@@ -26,6 +26,7 @@ import Link from 'next/link';
 import { fetchStats, fetchDeposits, adjustGlobalPool, fetchPoolLogs } from '@/lib/api';
 import { DashboardStats, DepositRequest, PoolAuditLog } from '@/lib/types';
 import { useAdminSocket } from '@/lib/socket';
+import { MaintenanceControl } from '@/components/MaintenanceControl';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
@@ -204,6 +205,9 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* System Maintenance & Player Broadcast Control Card */}
+      <MaintenanceControl onNotification={showToast} />
 
       {/* Stats Cards Grid: 8 Cards (4x2 Responsive) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

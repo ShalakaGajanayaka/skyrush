@@ -1,4 +1,4 @@
-import { DashboardStats, DepositRequest, WithdrawalRequest, User, PaymentChannel, PoolAuditLog } from './types';
+import { DashboardStats, DepositRequest, WithdrawalRequest, User, PaymentChannel, PoolAuditLog, MaintenanceStatus } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -249,5 +249,30 @@ export async function fetchMarketingRadarPreview(key?: string): Promise<Marketin
   }
   const json = await res.json();
   return json.data;
+}
+
+export async function fetchMaintenanceStatus(): Promise<MaintenanceStatus> {
+  const res = await authFetch(`${API_BASE}/admin/api/system/maintenance/status`, {
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error('Failed to fetch maintenance status');
+  return res.json();
+}
+
+export async function scheduleMaintenance(minutes: number = 15, message?: string): Promise<MaintenanceStatus> {
+  const res = await authFetch(`${API_BASE}/admin/api/system/maintenance/schedule`, {
+    method: 'POST',
+    body: JSON.stringify({ minutes, message }),
+  });
+  if (!res.ok) throw new Error('Failed to schedule maintenance');
+  return res.json();
+}
+
+export async function cancelMaintenance(): Promise<MaintenanceStatus> {
+  const res = await authFetch(`${API_BASE}/admin/api/system/maintenance/cancel`, {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error('Failed to cancel maintenance');
+  return res.json();
 }
 
