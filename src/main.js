@@ -231,6 +231,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   socketClient.on('betCancelled', (data) => liveBetsFeed.removeBet(data.id));
 
+  // Authoritative server-triggered auto-cashout success
+  socketClient.on('autoCashoutSuccess', (data) => {
+    if (data?.betIndex === 1) betCtrl1.onAutoCashedOut(data);
+    if (data?.betIndex === 2) betCtrl2.onAutoCashedOut(data);
+  });
+
   socketClient.on('balanceUpdate', (data) => {
     if (data && typeof data.balance === 'number') {
       const prev = currentBalance;

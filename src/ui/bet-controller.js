@@ -86,6 +86,8 @@ export class BetController {
     `;
 
     // Cache elements
+    this.tabBtns = this.panel.querySelectorAll('.tab-btn');
+    this.autoSettingsRow = this.panel.querySelector('.auto-settings-row');
     this.inputAmount = this.panel.querySelector('.bet-amount-input');
     this.btnAction = this.panel.querySelector('.main-action-btn');
     this.btnTitle = this.panel.querySelector('.action-title');
@@ -97,9 +99,44 @@ export class BetController {
     this.inputAutoMult = this.panel.querySelector('.auto-mult-input');
 
     this.bindEvents();
+    this.syncAutoUI();
+  }
+
+  syncAutoUI() {
+    if (this.autoCashout) {
+      this.autoSettingsRow?.classList.add('is-enabled');
+      if (this.inputAutoMult) this.inputAutoMult.disabled = false;
+    } else {
+      this.autoSettingsRow?.classList.remove('is-enabled');
+    }
   }
 
   bindEvents() {
+    // Tab switching (Bet vs Auto Mode)
+    this.tabBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        this.tabBtns.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        const tab = btn.dataset.tab;
+        if (tab === 'auto') {
+          this.autoBet = true;
+          this.autoCashout = true;
+          if (this.chkAutoCashout) this.chkAutoCashout.checked = true;
+          this.syncAutoUI();
+          notificationManager.info(
+            'Auto Bet Mode 🤖',
+            `Slot ${this.index} will automatically re-bet $${this.amount.toFixed(2)} USD each round.`
+          );
+        } else {
+          this.autoBet = false;
+          notificationManager.info(
+            'Manual Mode 🕹️',
+            `Slot ${this.index} set to manual betting.`
+          );
+        }
+      });
+    });
+
     // Steppers
     this.btnMinus.addEventListener('click', () => {
       this.setAmount(Math.max(this.minBet, this.amount - 1));
@@ -117,7 +154,7 @@ export class BetController {
     });
 
     // Quick Chips
-    this.chips.forEach(chip => {
+    this.chips.forEach((chip) => {
       chip.addEventListener('click', () => {
         const val = parseFloat(chip.dataset.val);
         this.setAmount(val);
@@ -127,13 +164,24 @@ export class BetController {
     // Auto cashout toggle
     this.chkAutoCashout.addEventListener('change', (e) => {
       this.autoCashout = e.target.checked;
+      this.syncAutoUI();
+    });
+
+    // Live typing on auto multiplier input
+    const updateAutoMult = (valStr) => {
+      let val = parseFloat(valStr);
+      if (!isNaN(val) && val >= 1.01) {
+        this.autoCashoutMultiplier = parseFloat(Math.min(1000, val).toFixed(2));
+      }
+    };
+
+    this.inputAutoMult.addEventListener('input', (e) => {
+      updateAutoMult(e.target.value);
     });
 
     this.inputAutoMult.addEventListener('change', (e) => {
-      let val = parseFloat(e.target.value) || 2.0;
-      val = Math.max(1.01, val);
-      this.autoCashoutMultiplier = val;
-      e.target.value = val.toFixed(2);
+      updateAutoMult(e.target.value);
+      e.target.value = this.autoCashoutMultiplier.toFixed(2);
     });
 
     // Action button click
@@ -300,13 +348,49 @@ export class BetController {
     if (this.state === 'placed') {
       const currentWin = (this.placedAmount * multiplier).toFixed(2);
       this.btnTitle.textContent = `CASH OUT`;
-      this.btnSub.textContent = `$${currentWin} USD`;
+      if (this.autoCashout) {
+        this.btnSub.textContent = `$${currentWin} (Auto ${this.autoCashoutMultiplier.toFixed(2)}x)`;
+      } else {
+        this.btnSub.textContent = `$${currentWin} USD`;
+      }
 
-      // Check auto-cashout
+      // Check auto-cashout client-side fallback if server event slightly delayed
       if (this.autoCashout && multiplier >= this.autoCashoutMultiplier) {
-        this.triggerCashout(multiplier);
+        this.triggerCashout(this.autoCashoutMultiplier);
       }
     }
+  }
+
+  onAutoCashedOut(data) {
+    if (this.state !== 'placed' && this.state !== 'queued') return;
+    const mult = Number(data.multiplier) || this.autoCashoutMultiplier || 2.0;
+    const finalWin = Number(data.winAmount) || Number((this.placedAmount * mult).toFixed(2));
+
+    this.state = 'cashed_out';
+    soundManager.playCashoutChime();
+
+    try {
+      confetti({
+        particleCount: 55,
+        spread: 65,
+        origin: { y: 0.8 },
+      });
+    } catch (_) {}
+
+    this.btnAction.className = 'main-action-btn btn-won';
+    this.btnTitle.textContent = `WON $${finalWin.toFixed(2)}`;
+    this.btnSub.textContent = `🎯 AUTO @ ${mult.toFixed(2)}x`;
+
+    this.activeBetId = null;
+
+    if (typeof data.balance === 'number') {
+      this.setBalance(data.balance);
+    }
+
+    notificationManager.success(
+      'Auto Cashout Won! 🎯',
+      `Auto-cashed out at ${mult.toFixed(2)}x! +$${finalWin.toFixed(2)} USD credited to wallet.`
+    );
   }
 
   onRoundCrashed(finalMultiplier) {
@@ -346,7 +430,11 @@ export class BetController {
     } else if (this.state === 'placed') {
       this.btnAction.classList.add('btn-cashout');
       this.btnTitle.textContent = 'CASH OUT';
-      this.btnSub.textContent = `$${this.placedAmount.toFixed(2)} USD`;
+      if (this.autoCashout) {
+        this.btnSub.textContent = `$${this.placedAmount.toFixed(2)} • Auto ${this.autoCashoutMultiplier.toFixed(2)}x`;
+      } else {
+        this.btnSub.textContent = `$${this.placedAmount.toFixed(2)} USD`;
+      }
     }
   }
 }

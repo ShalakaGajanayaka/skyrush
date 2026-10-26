@@ -600,7 +600,18 @@ body {
   justify-content: space-between;
   margin-top: auto;
   padding-top: 4px;
+  opacity: 0.65;
+  transition: opacity 0.2s ease;
 }
+
+.auto-settings-row.is-enabled {
+  opacity: 1;
+}
+
+.auto-settings-row.is-enabled .auto-toggle-label {
+  color: #38bdf8;
+}
+
 .auto-toggle-label {
   display: flex;
   align-items: center;
@@ -609,7 +620,10 @@ body {
   font-weight: 600;
   color: var(--text-muted);
   cursor: pointer;
+  user-select: none;
+  transition: color 0.2s ease;
 }
+
 .auto-mult-input-wrapper {
   display: flex;
   align-items: center;
@@ -617,7 +631,14 @@ body {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 2px 6px;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
+
+.auto-settings-row.is-enabled .auto-mult-input-wrapper {
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.12);
+}
+
 .auto-mult-input {
   width: 48px;
   background: transparent;
@@ -629,10 +650,12 @@ body {
   text-align: right;
   font-family: inherit;
 }
+
 .mult-x {
   font-size: 11px;
   color: var(--text-dim);
   font-weight: 700;
+  margin-left: 2px;
 }
 
 /* Big Action Button */

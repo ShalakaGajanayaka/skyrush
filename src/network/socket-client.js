@@ -162,6 +162,9 @@ export class SocketClient {
       }
     });
 
+    // Auto cashout success event
+    this.socket.on('autoCashoutSuccess', (data) => this.notify('autoCashoutSuccess', data));
+
     // Recurring clock sync (every 15s)
     setInterval(() => {
       if (this.isConnected) {
@@ -199,7 +202,8 @@ export class SocketClient {
   async placeBet(betData) {
     const betIndex = betData.betIndex || 1;
     const amount = betData.amount || 1.0;
-    return apiClient.placeBet(betIndex, amount);
+    const autoCashout = betData.autoCashout != null ? betData.autoCashout : null;
+    return apiClient.placeBet(betIndex, amount, autoCashout);
   }
 
   async cancelBet(betIndexOrId) {

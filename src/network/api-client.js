@@ -75,12 +75,13 @@ export class ApiClient {
 
   // --- Financial & Betting Actions (Authoritative) ---
 
-  async placeBet(betIndex, amount) {
+  async placeBet(betIndex, amount, autoCashout = null) {
     return this.request('/auth/game-bet', {
       method: 'POST',
       body: JSON.stringify({
         betIndex: Number(betIndex),
         amount: Number(amount),
+        autoCashout: autoCashout != null ? Number(autoCashout) : null,
       }),
     });
   }
