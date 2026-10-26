@@ -273,6 +273,23 @@ export class AuthModal {
           </div>
         </div>
       </div>
+
+      <!-- Custom In-Game Confirmation Modal (Replaces browser-native confirm) -->
+      <div class="skyrush-confirm-backdrop" id="skyrushConfirmModal" style="display: none; z-index: 100050;">
+        <div class="skyrush-confirm-box">
+          <div class="skyrush-confirm-icon-wrap">
+            <span class="skyrush-confirm-icon">↩️</span>
+          </div>
+          <div class="skyrush-confirm-title" id="skyrushConfirmTitle">Cancel Payout Request?</div>
+          <div class="skyrush-confirm-desc" id="skyrushConfirmDesc">
+            Are you sure you want to cancel this withdrawal request? Funds will be instantly restored to your playable flight wallet balance.
+          </div>
+          <div class="skyrush-confirm-actions">
+            <button type="button" class="skyrush-confirm-btn-keep" id="skyrushConfirmBtnKeep">Keep Request</button>
+            <button type="button" class="skyrush-confirm-btn-proceed" id="skyrushConfirmBtnProceed">Yes, Cancel & Refund</button>
+          </div>
+        </div>
+      </div>
     `;
 
     document.body.insertAdjacentHTML('beforeend', modalHtml);
@@ -555,6 +572,48 @@ export class AuthModal {
     }
   }
 
+  showConfirmDialog({ title, message, proceedText = 'Confirm', keepText = 'Cancel', icon = '↩️' }) {
+    return new Promise((resolve) => {
+      const modal = document.getElementById('skyrushConfirmModal');
+      const titleEl = document.getElementById('skyrushConfirmTitle');
+      const descEl = document.getElementById('skyrushConfirmDesc');
+      const btnKeep = document.getElementById('skyrushConfirmBtnKeep');
+      const btnProceed = document.getElementById('skyrushConfirmBtnProceed');
+      const iconWrap = modal ? modal.querySelector('.skyrush-confirm-icon') : null;
+
+      if (!modal) {
+        resolve(false);
+        return;
+      }
+
+      if (titleEl) titleEl.textContent = title;
+      if (descEl) descEl.innerHTML = message;
+      if (btnProceed) btnProceed.textContent = proceedText;
+      if (btnKeep) btnKeep.textContent = keepText;
+      if (iconWrap) iconWrap.textContent = icon;
+
+      modal.style.display = 'flex';
+
+      const cleanup = (result) => {
+        modal.style.display = 'none';
+        btnKeep.removeEventListener('click', onKeep);
+        btnProceed.removeEventListener('click', onProceed);
+        modal.removeEventListener('click', onBackdrop);
+        resolve(result);
+      };
+
+      const onKeep = () => cleanup(false);
+      const onProceed = () => cleanup(true);
+      const onBackdrop = (e) => {
+        if (e.target === modal) cleanup(false);
+      };
+
+      btnKeep.addEventListener('click', onKeep);
+      btnProceed.addEventListener('click', onProceed);
+      modal.addEventListener('click', onBackdrop);
+    });
+  }
+
   async loadHistory(tabName, forceRefresh = false) {
     this.currentRecordsTab = tabName;
     const listEl = document.getElementById('pilotRecordsList');
@@ -771,7 +830,15 @@ export class AuthModal {
         const id = btn.getAttribute('data-id');
         const amount = btn.getAttribute('data-amount');
 
-        if (!confirm(`Cancel this $${amount} USD withdrawal request and restore funds to your flight wallet balance?`)) {
+        const confirmed = await this.showConfirmDialog({
+          title: 'Cancel Payout Request?',
+          message: `Are you sure you want to cancel this <strong>$${amount} USD</strong> payout request?<br/><span style="color: #94a3b8; font-size: 11px; margin-top: 6px; display: inline-block;">Funds will be instantly restored to your playable flight wallet balance.</span>`,
+          proceedText: 'Yes, Cancel & Restore',
+          keepText: 'Keep Request',
+          icon: '↩️',
+        });
+
+        if (!confirmed) {
           return;
         }
 
