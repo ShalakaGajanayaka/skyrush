@@ -215,7 +215,7 @@ export class ApiClient {
   async getMyHistory() {
     const token = this.getToken();
     if (!token) return { success: false, deposits: [], withdrawals: [] };
-    const res = await this.request(`/admin/my-history?token=${encodeURIComponent(token)}`, {
+    const res = await this.request('/admin/my-history', {
       method: 'GET',
     });
     return {
