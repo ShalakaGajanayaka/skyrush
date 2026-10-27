@@ -17,6 +17,7 @@ export class BetController {
 
     // States: 'idle' | 'queued' | 'placed' | 'cashed_out'
     this.state = 'idle';
+    this.currentRoundStatus = 'waiting';
     this.activeBetId = null;
     this.placedAmount = 0;
 
@@ -261,7 +262,13 @@ export class BetController {
           this.setBalance(res.balance);
         }
         this.activeBetId = res.bet?.id || betId;
-        this.state = res.queued ? 'queued' : 'placed';
+        // If the round is currently waiting (countdown) or queued for next round,
+        // keep button in 'queued' (WAITING / CANCEL) state until takeoff!
+        if (this.currentRoundStatus === 'waiting' || res.queued) {
+          this.state = 'queued';
+        } else {
+          this.state = 'placed';
+        }
         this.updateButtonView();
       } else {
         notificationManager.error(
@@ -326,6 +333,7 @@ export class BetController {
   }
 
   onRoundWaiting(countdown) {
+    this.currentRoundStatus = 'waiting';
     if (this.state === 'cashed_out') {
       this.state = 'idle';
       this.activeBetId = null;
@@ -338,6 +346,7 @@ export class BetController {
   }
 
   onRoundPlaying(startTime) {
+    this.currentRoundStatus = 'playing';
     if (this.state === 'queued') {
       this.state = 'placed';
       this.updateButtonView();
@@ -410,6 +419,7 @@ export class BetController {
   }
 
   onRoundCrashed(finalMultiplier) {
+    this.currentRoundStatus = 'crashed';
     if (this._autoCashoutFallbackTimer) {
       clearTimeout(this._autoCashoutFallbackTimer);
       this._autoCashoutFallbackTimer = null;
@@ -446,7 +456,7 @@ export class BetController {
     } else if (this.state === 'queued') {
       this.btnAction.classList.add('btn-queued');
       this.btnTitle.textContent = 'WAITING';
-      this.btnSub.textContent = 'CANCEL';
+      this.btnSub.textContent = `CANCEL $${this.placedAmount.toFixed(2)}`;
     } else if (this.state === 'placed') {
       this.btnAction.classList.add('btn-cashout');
       this.btnTitle.textContent = 'CASH OUT';
