@@ -2238,3 +2238,34 @@ body {
 .skyrush-confirm-btn-proceed:active {
   transform: translateY(0);
 }
+
+/* -------------------------------------------------------------
+   MARKETING STREAMER ROOM REGULATORY COMPLIANCE WATERMARK
+   ------------------------------------------------------------- */
+.marketing-compliance-badge {
+  position: absolute;
+  top: 58px;
+  right: 18px;
+  background: rgba(225, 29, 72, 0.18);
+  border: 1px solid rgba(244, 63, 94, 0.45);
+  backdrop-filter: blur(10px);
+  color: #fda4af;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  z-index: 100;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 16px rgba(225, 29, 72, 0.25);
+  text-transform: uppercase;
+  animation: pulseWatermark 3s ease-in-out infinite alternate;
+}
+
+@keyframes pulseWatermark {
+  from { opacity: 0.85; border-color: rgba(244, 63, 94, 0.35); }
+  to { opacity: 1; border-color: rgba(244, 63, 94, 0.7); box-shadow: 0 4px 20px rgba(225, 29, 72, 0.4); }
+}

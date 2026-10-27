@@ -58,9 +58,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     pfModal.show(lastProvablyFairRound);
   });
 
+  // Regulatory Compliance: Streamer Marketing Demo Watermark
+  const updateMarketingComplianceBadge = (isMarketing) => {
+    let badge = document.getElementById('marketingComplianceBadge');
+    if (isMarketing) {
+      if (!badge) {
+        badge = document.createElement('div');
+        badge.id = 'marketingComplianceBadge';
+        badge.className = 'marketing-compliance-badge';
+        badge.innerHTML = '<span>🔴</span> SIMULATED DEMO ENVIRONMENT — MARKETING ONLY';
+        document.body.appendChild(badge);
+      }
+      badge.style.display = 'flex';
+    } else if (badge) {
+      badge.style.display = 'none';
+    }
+  };
+
   // 4. Initialize Player Auth Modal
   const authModal = new AuthModal((user) => {
     currentUser = user && user.id ? user : null;
+    updateMarketingComplianceBadge(Boolean(currentUser && currentUser.isMarketing));
     if (currentUser && typeof currentUser.balance === 'number') {
       setBalance(currentUser.balance);
     } else {
@@ -266,6 +284,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // 11. Connect to Backend Socket.IO Server
+  socketClient.subscribe('userSubscribed', (data) => {
+    updateMarketingComplianceBadge(Boolean(data?.isMarketing));
+  });
   socketClient.init();
 
   // 12. Synchronize Authoritative Profile & Balance from Backend
@@ -275,6 +296,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const profile = await apiClient.getProfile();
       if (profile && profile.id) {
         currentUser = profile;
+        updateMarketingComplianceBadge(Boolean(profile.isMarketing));
         if (typeof profile.balance === 'number') {
           setBalance(profile.balance);
         }
@@ -285,15 +307,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         apiClient.setToken(null);
         socketClient.setAuthToken(null);
         currentUser = null;
+        updateMarketingComplianceBadge(false);
         setBalance(0);
       }
     } else {
       currentUser = null;
+      updateMarketingComplianceBadge(false);
       setBalance(0);
     }
   } catch (err) {
     console.warn('[Auth] Profile sync initial fetch fallback:', err);
     currentUser = null;
+    updateMarketingComplianceBadge(false);
     setBalance(0);
   }
 
