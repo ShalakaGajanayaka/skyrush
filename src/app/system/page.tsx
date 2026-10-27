@@ -155,18 +155,7 @@ export default function SystemOperationsPage() {
       </div>
 
       {/* Section 1: Dedicated Maintenance Control Hub */}
-      <div>
-        <div className="mb-3">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <span>🛑</span>
-            <span>Scheduled Maintenance Protocol</span>
-          </h2>
-          <p className="text-xs text-gray-400">
-            Initiate automated 15-minute player warning tickers. When the countdown completes, starting new games pauses and all queued bets are auto-refunded.
-          </p>
-        </div>
-        <MaintenanceControl onNotification={showToast} />
-      </div>
+      <MaintenanceControl onNotification={showToast} />
 
       {/* Section 2: Live In-Game Player Announcement Broadcaster */}
       <div className="rounded-2xl bg-[#0f172a]/80 border border-white/10 p-6 backdrop-blur-xl shadow-xl">
