@@ -276,3 +276,12 @@ export async function cancelMaintenance(): Promise<MaintenanceStatus> {
   return res.json();
 }
 
+export async function broadcastAnnouncement(payload: { title?: string; message: string; type?: string }): Promise<{ success: boolean }> {
+  const res = await authFetch(`${API_BASE}/admin/api/system/broadcast`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error('Failed to broadcast announcement');
+  return res.json();
+}
+

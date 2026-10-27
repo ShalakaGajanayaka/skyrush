@@ -13,6 +13,7 @@ import {
   PlusCircle,
   Radio,
   ArrowUpRight,
+  Sliders,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -62,6 +63,12 @@ export default function Sidebar({ pendingCount = 0, pendingWithdrawalCount = 0, 
       href: '/streamer-hud',
       icon: Radio,
       badge: 'RADAR',
+    },
+    {
+      label: 'System Operations',
+      href: '/system',
+      icon: Sliders,
+      badge: 'OPS',
     },
   ];
 

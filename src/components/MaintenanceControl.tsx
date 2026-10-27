@@ -170,7 +170,7 @@ export function MaintenanceControl({ onNotification }: MaintenanceControlProps) 
 
       {/* Confirmation Modal */}
       {showConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
             <h4 className="text-base font-bold text-white flex items-center gap-2 mb-2">
               <span>⚠️</span>
