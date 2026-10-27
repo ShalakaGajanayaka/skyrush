@@ -52,11 +52,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 2.1 Initialize In-Game Maintenance Banner & Modal
   const maintenanceBanner = new MaintenanceBanner(socketClient);
 
-  // 3. Initialize Provably Fair Modal
-  const pfModal = new ProvablyFairModal();
-  document.getElementById('btnProvablyFair').addEventListener('click', () => {
-    pfModal.show(lastProvablyFairRound);
-  });
+  // 3. Provably Fair Modal (Disabled for now per user request)
+  const btnPF = document.getElementById('btnProvablyFair');
+  if (btnPF) {
+    btnPF.style.display = 'none';
+  }
 
   // Regulatory Compliance: Streamer Marketing Demo Watermark
   const updateMarketingComplianceBadge = (isMarketing) => {

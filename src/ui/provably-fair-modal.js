@@ -63,14 +63,8 @@ export class ProvablyFairModal {
   }
 
   show(roundData) {
-    if (!this.modal) return;
-    if (roundData) {
-      document.getElementById('pfRoundNum').textContent = roundData.roundNumber || '#--';
-      document.getElementById('pfServerHash').textContent = roundData.serverSeedHash || 'Generated on round start';
-      document.getElementById('pfClientSeed').textContent = roundData.clientSeed || '0000000000000000000413e4592f3d37fa6104b0e32e31575e03b0c8b95da420';
-      document.getElementById('pfPrevSeed').textContent = roundData.serverSeed || 'Revealed immediately when round concludes';
-    }
-    this.modal.style.display = 'flex';
+    // Disabled for now per user request
+    return;
   }
 
   hide() {
