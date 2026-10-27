@@ -284,7 +284,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // 11. Connect to Backend Socket.IO Server
-  socketClient.subscribe('userSubscribed', (data) => {
+  socketClient.on('userSubscribed', (data) => {
     updateMarketingComplianceBadge(Boolean(data?.isMarketing));
   });
   socketClient.init();

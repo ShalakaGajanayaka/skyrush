@@ -217,9 +217,15 @@ export class SocketClient {
   }
 
   on(event, callback) {
-    if (this.listeners[event]) {
-      this.listeners[event].push(callback);
+    if (!this.listeners[event]) {
+      this.listeners[event] = [];
     }
+    this.listeners[event].push(callback);
+  }
+
+  // Defensive alias for event subscription
+  subscribe(event, callback) {
+    return this.on(event, callback);
   }
 
   notify(event, payload) {
