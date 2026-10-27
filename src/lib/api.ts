@@ -232,14 +232,16 @@ export interface MarketingRadarData {
 }
 
 export async function fetchMarketingRadarPreview(key?: string): Promise<MarketingRadarData> {
-  const query = key ? `?key=${encodeURIComponent(key)}` : '';
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
+  if (key && key.trim()) {
+    headers['X-Streamer-Key'] = key.trim();
+  }
 
-  const res = await fetch(`${API_BASE}/admin/api/marketing/preview${query}`, {
+  const res = await fetch(`${API_BASE}/admin/api/marketing/preview`, {
     headers,
     cache: 'no-store',
   });

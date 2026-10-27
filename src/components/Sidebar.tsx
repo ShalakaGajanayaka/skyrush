@@ -15,6 +15,7 @@ import {
   ArrowUpRight,
   Sliders,
 } from 'lucide-react';
+import { disconnectSocket } from '@/lib/socket';
 
 interface SidebarProps {
   pendingCount?: number;
@@ -159,6 +160,7 @@ export default function Sidebar({ pendingCount = 0, pendingWithdrawalCount = 0, 
                 });
               } catch (_) {}
             }
+            disconnectSocket();
             localStorage.removeItem('admin_token');
             window.location.reload();
           }}

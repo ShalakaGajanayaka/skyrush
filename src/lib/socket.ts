@@ -18,6 +18,13 @@ export function getSocket(): Socket {
   return socket;
 }
 
+export function disconnectSocket(): void {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+}
+
 export function useAdminSocket(
   onNewDeposit?: (deposit: any) => void,
   onNewWithdrawal?: (withdrawal: any) => void,

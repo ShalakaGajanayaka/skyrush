@@ -69,6 +69,10 @@ export default function BalanceAdjustmentModal({
         setError('Deduct amount must be greater than zero.');
         return;
       }
+      if (action === 'SET_AMOUNT' && num > 100000) {
+        setError('Target balance cannot exceed maximum security ceiling of $100,000 USD.');
+        return;
+      }
     }
 
     setLoading(true);

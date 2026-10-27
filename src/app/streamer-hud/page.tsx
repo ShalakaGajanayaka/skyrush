@@ -25,13 +25,11 @@ import {
 import { getSocket } from '@/lib/socket';
 import { fetchMarketingRadarPreview, MarketingRadarData } from '@/lib/api';
 
-const DEFAULT_STREAMER_KEY = 'skyrush_streamer_2026';
-
 function StreamerHudContent() {
   const searchParams = useSearchParams();
   const urlKey = searchParams.get('key') || '';
 
-  const [streamerKey, setStreamerKey] = useState(urlKey || DEFAULT_STREAMER_KEY);
+  const [streamerKey, setStreamerKey] = useState<string>(urlKey || '');
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [data, setData] = useState<MarketingRadarData | null>(null);
   const [connected, setConnected] = useState(false);
@@ -66,38 +64,33 @@ function StreamerHudContent() {
   }, [soundEnabled]);
 
   // Initial authentication & data load
-  const loadData = useCallback(async (keyToUse: string) => {
+  const loadData = useCallback(async (keyToUse?: string) => {
     try {
       const res = await fetchMarketingRadarPreview(keyToUse);
       setData(res);
       setIsAuthorized(true);
       setAuthError(null);
     } catch (err: any) {
-      // If we don't have a valid key and not logged in as admin
-      const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
-      if (!token && keyToUse !== DEFAULT_STREAMER_KEY) {
-        setIsAuthorized(false);
-        setAuthError(err?.message || 'Access Denied: Please provide a valid Streamer Access Key.');
-      } else {
-        // Retry with default streamer key
-        try {
-          const fallbackRes = await fetchMarketingRadarPreview(DEFAULT_STREAMER_KEY);
-          setData(fallbackRes);
-          setIsAuthorized(true);
-          setStreamerKey(DEFAULT_STREAMER_KEY);
-          setAuthError(null);
-        } catch (_) {
-          setIsAuthorized(false);
-          setAuthError('Unauthorized: Enter valid Streamer Key or log into Admin Dashboard.');
-        }
-      }
+      setIsAuthorized(false);
+      setAuthError(err?.message || 'Access Denied: Please provide a valid Streamer Access Key or log into Admin Dashboard.');
     }
   }, []);
 
   useEffect(() => {
-    const key = urlKey || localStorage.getItem('skyrush_streamer_key') || DEFAULT_STREAMER_KEY;
+    let key = '';
+    if (urlKey) {
+      key = urlKey.trim();
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('skyrush_streamer_key', key);
+        // SECURITY: Strip secret key from URL address bar to avoid leaking in history / referer
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    } else if (typeof window !== 'undefined') {
+      key = sessionStorage.getItem('skyrush_streamer_key') || localStorage.getItem('skyrush_streamer_key') || '';
+    }
+
     setStreamerKey(key);
-    loadData(key);
+    loadData(key || undefined);
   }, [urlKey, loadData]);
 
   // WebSocket real-time subscription
@@ -166,11 +159,11 @@ function StreamerHudContent() {
   }, [streamerKey, playCueSound]);
 
   const handleCopyShareLink = () => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://admin.skyrush.cc';
-    const link = `${origin}/streamer-hud?key=${encodeURIComponent(streamerKey)}`;
-    navigator.clipboard.writeText(link);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+    if (streamerKey) {
+      navigator.clipboard.writeText(streamerKey);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
   };
 
   const handleKeySubmit = (e: React.FormEvent) => {
@@ -178,7 +171,9 @@ function StreamerHudContent() {
     if (!keyInput.trim()) return;
     const clean = keyInput.trim();
     setStreamerKey(clean);
-    localStorage.setItem('skyrush_streamer_key', clean);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('skyrush_streamer_key', clean);
+    }
     loadData(clean);
   };
 
@@ -545,10 +540,11 @@ function StreamerHudContent() {
         <div className="flex-shrink-0">
           <button
             onClick={handleCopyShareLink}
-            className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-gray-200 flex items-center gap-2 transition-all"
+            disabled={!streamerKey}
+            className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-gray-200 flex items-center gap-2 transition-all disabled:opacity-40"
           >
-            <Key className="w-3.5 h-3.5 text-purple-400" />
-            <span>Key: <code className="font-mono text-purple-300">{streamerKey}</code></span>
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-purple-400" />}
+            <span>{copied ? 'Copied Key!' : 'Copy Streamer Key'}</span>
           </button>
         </div>
       </div>

@@ -47,6 +47,10 @@ export default function ManualCreditModal({
       setError('Amount must be greater than zero');
       return;
     }
+    if (numAmount > 10000) {
+      setError('Amount exceeds the maximum security ceiling of $10,000 USD per transaction');
+      return;
+    }
 
     setLoading(true);
     setError(null);
