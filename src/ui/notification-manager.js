@@ -96,19 +96,31 @@ class NotificationManager {
     }
 
     const actionHtml = actionText
-      ? `<button class="toast-action-btn" type="button">${actionText}</button>`
+      ? `<button class="toast-action-btn" type="button"></button>`
       : '';
 
     toast.innerHTML = `
       <div class="toast-icon-wrapper">${iconSvg}</div>
       <div class="toast-content-wrapper">
-        ${title ? `<div class="toast-title">${title}</div>` : ''}
-        <div class="toast-message">${message}</div>
+        ${title ? `<div class="toast-title"></div>` : ''}
+        <div class="toast-message"></div>
         ${actionHtml}
       </div>
       <button class="toast-close-btn" type="button" aria-label="Close notification">✕</button>
       <div class="toast-progress-bar" style="animation-duration: ${duration}ms;"></div>
     `;
+
+    // Safe DOM text assignment (strictly neutralizes DOM XSS vectors)
+    if (title) {
+      const titleEl = toast.querySelector('.toast-title');
+      if (titleEl) titleEl.textContent = String(title);
+    }
+    const msgEl = toast.querySelector('.toast-message');
+    if (msgEl) msgEl.textContent = String(message);
+    if (actionText) {
+      const actBtn = toast.querySelector('.toast-action-btn');
+      if (actBtn) actBtn.textContent = String(actionText);
+    }
 
     // Hook Close Button
     const closeBtn = toast.querySelector('.toast-close-btn');

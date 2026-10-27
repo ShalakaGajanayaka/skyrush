@@ -65,8 +65,8 @@ export class SocketClient {
     };
 
     if (this.authToken) {
+      // Secure transport: Send token strictly in handshake auth payload (never in URL query strings)
       socketOptions.auth = { token: this.authToken };
-      socketOptions.query = { token: this.authToken };
     }
 
     this.socket = io(this.serverUrl, socketOptions);
