@@ -733,6 +733,7 @@ export class AuthModal {
         const amt = Number(item.amount || 0);
         const status = (item.status || 'PENDING').toUpperCase();
         const ref = item.referenceNumber || item.reference || item.txid || (item.id ? item.id.slice(0, 10) : 'BINANCE');
+        const cleanRef = escapeHtml(ref);
         const dateStr = this.formatRecordDate(item.createdAt);
         let badgeClass = 'status-pending';
         if (status === 'APPROVED' || status === 'COMPLETED' || status === 'SUCCESS') badgeClass = 'status-approved';
@@ -743,13 +744,13 @@ export class AuthModal {
             <div>
               <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
                 <span style="font-size: 12px; font-weight: 700; color: #fff;">Binance Deposit</span>
-                <span class="rec-badge ${badgeClass}">${status}</span>
+                <span class="rec-badge ${badgeClass}">${escapeHtml(status)}</span>
               </div>
               <div style="font-size: 11px; color: var(--text-dim); display: flex; align-items: center; gap: 4px;">
-                <span>Ref: <strong style="color: #cbd5e1;">${ref}</strong></span>
-                <button type="button" class="btn-copy-ref" data-copy="${ref}" title="Copy Order Reference" style="background: none; border: none; color: #F0B90B; cursor: pointer; font-size: 10px; padding: 0 2px;">📋</button>
+                <span>Ref: <strong style="color: #cbd5e1;">${cleanRef}</strong></span>
+                <button type="button" class="btn-copy-ref" data-copy="${cleanRef}" title="Copy Order Reference" style="background: none; border: none; color: #F0B90B; cursor: pointer; font-size: 10px; padding: 0 2px;">📋</button>
               </div>
-              <div style="font-size: 10px; color: var(--text-dim); margin-top: 2px;">${dateStr}</div>
+              <div style="font-size: 10px; color: var(--text-dim); margin-top: 2px;">${escapeHtml(dateStr)}</div>
             </div>
             <div style="text-align: right;">
               <div style="font-size: 14px; font-weight: 800; color: #F0B90B;">
@@ -780,22 +781,25 @@ export class AuthModal {
 
         const canCancel = status === 'PENDING';
 
+        const cleanId = escapeHtml(item.id);
+        const cleanPayout = escapeHtml(payoutInfo);
+
         return `
-          <div class="rec-card" id="withdrawal-card-${item.id}">
+          <div class="rec-card" id="withdrawal-card-${cleanId}">
             <div>
               <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
                 <span style="font-size: 12px; font-weight: 700; color: #fff;">Binance Withdrawal</span>
-                <span class="rec-badge ${badgeClass}">${status}</span>
+                <span class="rec-badge ${badgeClass}">${escapeHtml(status)}</span>
               </div>
-              <div style="font-size: 11px; color: var(--text-dim);">${payoutInfo}</div>
-              <div style="font-size: 10px; color: var(--text-dim); margin-top: 2px;">${dateStr}</div>
+              <div style="font-size: 11px; color: var(--text-dim);">${cleanPayout}</div>
+              <div style="font-size: 10px; color: var(--text-dim); margin-top: 2px;">${escapeHtml(dateStr)}</div>
             </div>
             <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
               <div style="font-size: 14px; font-weight: 800; color: #10b981; display: flex; align-items: center; gap: 3px;">
                 <span style="font-size: 13px; opacity: 0.85;">↗</span> $${amt.toFixed(2)} <span style="font-size: 10px; color: var(--text-dim); font-weight: 600;">USD</span>
               </div>
               ${canCancel ? `
-                <button type="button" class="btn-cancel-withdrawal" data-id="${item.id}" data-amount="${amt.toFixed(2)}" title="Cancel this pending payout request">
+                <button type="button" class="btn-cancel-withdrawal" data-id="${cleanId}" data-amount="${amt.toFixed(2)}" title="Cancel this pending payout request">
                   ✕ Cancel Request
                 </button>
               ` : ''}
@@ -892,4 +896,14 @@ export class AuthModal {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return `${months[d.getMonth()]} ${d.getDate()}, ${time}`;
   }
+}
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
