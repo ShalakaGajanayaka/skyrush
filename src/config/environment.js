@@ -3,13 +3,9 @@
  * Tiered Hierarchy: Query Param -> Runtime Window Config -> Vite Build Env -> Localhost Fallback
  */
 
-// Trusted host patterns for query parameter override security
-const ALLOWED_HOST_SUFFIXES = [
-  'skyrush.cc',
-  'onrender.com',
-  'localhost',
-  '127.0.0.1',
-];
+// Trusted host patterns for query parameter override security (strictly official domains only)
+const SKYRUSH_DOMAIN_REGEX = /^([a-z0-9-]+\.)?skyrush\.cc$/i;
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1']);
 
 /**
  * Validates whether an external URL is safe against token-stealing injection attacks
@@ -18,7 +14,7 @@ function isSafeServerUrl(urlStr) {
   try {
     const parsed = new URL(urlStr);
     const hostname = parsed.hostname.toLowerCase();
-    return ALLOWED_HOST_SUFFIXES.some(suffix => hostname === suffix || hostname.endsWith(`.${suffix}`));
+    return SKYRUSH_DOMAIN_REGEX.test(hostname) || LOCAL_HOSTS.has(hostname);
   } catch {
     return false;
   }
