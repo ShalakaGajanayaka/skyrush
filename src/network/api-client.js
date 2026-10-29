@@ -86,12 +86,16 @@ export class ApiClient {
     });
   }
 
-  async cancelBet(betIndex) {
+  async cancelBet(betIndex, target = null) {
+    const payload = {
+      betIndex: Number(betIndex),
+    };
+    if (target) {
+      payload.target = target;
+    }
     return this.request('/auth/game-cancel-bet', {
       method: 'POST',
-      body: JSON.stringify({
-        betIndex: Number(betIndex),
-      }),
+      body: JSON.stringify(payload),
     });
   }
 

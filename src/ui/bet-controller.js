@@ -281,7 +281,8 @@ export class BetController {
       }
     } else if (this.state === 'queued') {
       // Cancel queued bet
-      const res = await this.socket.cancelBet(this.index);
+      const target = this.currentRoundStatus === 'playing' ? 'queued' : null;
+      const res = await this.socket.cancelBet(this.index, target);
       if (res && res.success && typeof res.balance === 'number') {
         this.setBalance(res.balance);
       }
@@ -515,5 +516,39 @@ export class BetController {
         this.btnSub.textContent = `$${this.placedAmount.toFixed(2)} USD`;
       }
     }
+  }
+
+  restoreBetState(betData, isQueued = false) {
+    if (!betData) return;
+    this.activeBetId = betData.id || `bet_${Date.now()}`;
+    this.placedAmount = Number(betData.amountUSD || betData.amount || this.amount);
+    if (betData.autoCashout && Number(betData.autoCashout) >= 1.01) {
+      this.autoCashout = true;
+      this.autoCashoutMultiplier = Number(betData.autoCashout);
+      if (this.inputCashout) this.inputCashout.value = this.autoCashoutMultiplier.toFixed(2);
+      if (this.switchCashout) this.switchCashout.classList.add('active');
+    }
+    if (isQueued || this.currentRoundStatus === 'waiting') {
+      this.state = 'queued';
+    } else if (this.currentRoundStatus === 'playing') {
+      this.state = 'placed';
+    } else {
+      this.state = 'queued';
+    }
+    this.btnAction.classList.remove('disabled');
+    this.updateButtonView();
+  }
+
+  onBetActivated(data) {
+    if (!data || data.betIndex !== this.index) return;
+    this.activeBetId = data.bet?.id || this.activeBetId;
+    this.placedAmount = Number(data.bet?.amountUSD || data.bet?.amount || this.placedAmount);
+    if (this.currentRoundStatus === 'playing') {
+      this.state = 'placed';
+    } else {
+      this.state = 'queued';
+    }
+    this.btnAction.classList.remove('disabled');
+    this.updateButtonView();
   }
 }

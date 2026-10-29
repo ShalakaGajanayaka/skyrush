@@ -262,9 +262,9 @@ export class SocketClient {
     return apiClient.placeBet(betIndex, amount, autoCashout);
   }
 
-  async cancelBet(betIndexOrId) {
+  async cancelBet(betIndexOrId, target = null) {
     const betIndex = typeof betIndexOrId === 'number' ? betIndexOrId : (betIndexOrId?.betIndex || 1);
-    return apiClient.cancelBet(betIndex);
+    return apiClient.cancelBet(betIndex, target);
   }
 
   async cashOut(betIndexOrId, multiplier = null) {

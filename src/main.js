@@ -261,6 +261,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (data?.betIndex === 2) betCtrl2.onAutoCashedOut(data);
   });
 
+  // Authoritative queued-bet activation on new round start
+  socketClient.on('betActivated', (data) => {
+    if (data?.betIndex === 1) betCtrl1.onBetActivated(data);
+    if (data?.betIndex === 2) betCtrl2.onBetActivated(data);
+  });
+
   socketClient.on('balanceUpdate', (data) => {
     if (data && typeof data.balance === 'number') {
       const prev = currentBalance;
@@ -282,6 +288,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
   });
+
+  const syncActiveAndQueuedBets = (source) => {
+    if (!source) return;
+    if (source.activeBets?.slot1) betCtrl1.restoreBetState(source.activeBets.slot1, false);
+    if (source.activeBets?.slot2) betCtrl2.restoreBetState(source.activeBets.slot2, false);
+    if (source.queuedBets?.slot1) betCtrl1.restoreBetState(source.queuedBets.slot1, true);
+    if (source.queuedBets?.slot2) betCtrl2.restoreBetState(source.queuedBets.slot2, true);
+  };
 
   // 11. Connect to Backend Socket.IO Server
   socketClient.on('userSubscribed', (data) => {
@@ -305,6 +319,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       setBalance(data.balance);
     }
 
+    // Re-hydrate active & queued bets if delivered in socket subscription payload
+    syncActiveAndQueuedBets(data);
+
     // Refresh profile in background to sync active bet controllers (slot 1 & slot 2)
     apiClient.getProfile().then((profile) => {
       if (profile && profile.balance !== undefined) {
@@ -312,6 +329,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (profile.username && currentUser) {
           currentUser.username = profile.username;
         }
+        syncActiveAndQueuedBets(profile);
       }
     }).catch(() => {});
   });
@@ -362,6 +380,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (typeof profile.balance === 'number') {
           setBalance(profile.balance);
         }
+        syncActiveAndQueuedBets(profile);
         console.log(`👤 [Auth] Synchronized wallet with server for [${profile.username}]: $${profile.balance} USD`);
       } else {
         // Stale or invalid token on backend -> purge!
