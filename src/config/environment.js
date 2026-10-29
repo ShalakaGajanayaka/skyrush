@@ -14,7 +14,11 @@ function isSafeServerUrl(urlStr) {
   try {
     const parsed = new URL(urlStr);
     const hostname = parsed.hostname.toLowerCase();
-    return SKYRUSH_DOMAIN_REGEX.test(hostname) || LOCAL_HOSTS.has(hostname);
+    const currentHost = typeof window !== 'undefined' ? window.location.hostname.toLowerCase() : '';
+    const currentParts = currentHost.split('.');
+    const currentRootDomain = currentParts.length >= 2 ? currentParts.slice(-2).join('.') : '';
+    const isSameDomain = Boolean(currentRootDomain && (hostname === currentRootDomain || hostname.endsWith('.' + currentRootDomain)));
+    return SKYRUSH_DOMAIN_REGEX.test(hostname) || LOCAL_HOSTS.has(hostname) || isSameDomain;
   } catch {
     return false;
   }
