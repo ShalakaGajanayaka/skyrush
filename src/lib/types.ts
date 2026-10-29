@@ -94,3 +94,43 @@ export interface MaintenanceStatus {
   remainingSeconds: number;
   message: string;
 }
+
+export interface BetHistoryRecord {
+  id: string;
+  userId: string;
+  betAmount: number | string;
+  cashOutMultiplier: number | string | null;
+  crashPoint: number | string;
+  winAmount: number | string;
+  currency: string;
+  createdAt: string;
+}
+
+export interface PlayerFinancialSummary {
+  currentBalance: number;
+  totalDepositedAmount: number;
+  totalApprovedDepositsCount: number;
+  totalWithdrawnAmount: number;
+  totalPaidWithdrawalsCount: number;
+  netCashFlow: number;
+  totalWageredAmount: number;
+  totalWonAmount: number;
+  netGGR: number;
+  totalBetsCount: number;
+}
+
+export interface PlayerDetailedHistoryResponse {
+  success: boolean;
+  user: User;
+  summary: PlayerFinancialSummary;
+  counts: {
+    bets: number;
+    deposits: number;
+    withdrawals: number;
+  };
+  page: number;
+  limit: number;
+  bets: BetHistoryRecord[];
+  deposits: DepositRequest[];
+  withdrawals: WithdrawalRequest[];
+}

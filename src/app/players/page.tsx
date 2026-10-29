@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Users, Search, RefreshCw, PlusCircle, Trophy, Gamepad2, Coins, Sparkles, Video, Zap, RotateCcw } from 'lucide-react';
+import { Users, Search, RefreshCw, PlusCircle, Trophy, Gamepad2, Coins, Sparkles, Video, Zap, RotateCcw, History } from 'lucide-react';
 import { fetchUsers } from '@/lib/api';
 import { User } from '@/lib/types';
 import ManualCreditModal from '@/components/ManualCreditModal';
 import MarketingModal from '@/components/MarketingModal';
 import BalanceAdjustmentModal from '@/components/BalanceAdjustmentModal';
+import PlayerHistoryDrawer from '@/components/PlayerHistoryDrawer';
 
 export default function PlayersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -18,6 +19,8 @@ export default function PlayersPage() {
   const [isMarketingModalOpen, setIsMarketingModalOpen] = useState(false);
   const [adjustUser, setAdjustUser] = useState<User | null>(null);
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
+  const [historyUser, setHistoryUser] = useState<User | null>(null);
+  const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -58,6 +61,11 @@ export default function PlayersPage() {
   const handleOpenMarketing = (u: User) => {
     setMarketingUser(u);
     setIsMarketingModalOpen(true);
+  };
+
+  const handleOpenHistory = (u: User) => {
+    setHistoryUser(u);
+    setIsHistoryDrawerOpen(true);
   };
 
   return (
@@ -180,6 +188,14 @@ export default function PlayersPage() {
                   <td className="py-3.5 px-4 text-right">
                     <div className="inline-flex items-center gap-2">
                       <button
+                        onClick={() => handleOpenHistory(u)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 font-bold text-xs border-none transition-all active:scale-95"
+                        title="View Bet, Deposit & Withdrawal History"
+                      >
+                        <History className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>History</span>
+                      </button>
+                      <button
                         onClick={() => {
                           setAdjustUser(u);
                           setIsAdjustModalOpen(true);
@@ -213,6 +229,12 @@ export default function PlayersPage() {
           </tbody>
         </table>
       </div>
+
+      <PlayerHistoryDrawer
+        isOpen={isHistoryDrawerOpen}
+        onClose={() => setIsHistoryDrawerOpen(false)}
+        user={historyUser}
+      />
 
       <ManualCreditModal
         isOpen={isModalOpen}

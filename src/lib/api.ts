@@ -1,4 +1,4 @@
-import { DashboardStats, DepositRequest, WithdrawalRequest, User, PaymentChannel, PoolAuditLog, MaintenanceStatus } from './types';
+import { DashboardStats, DepositRequest, WithdrawalRequest, User, PaymentChannel, PoolAuditLog, MaintenanceStatus, PlayerDetailedHistoryResponse } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -284,6 +284,31 @@ export async function broadcastAnnouncement(payload: { title?: string; message: 
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error('Failed to broadcast announcement');
+  return res.json();
+}
+
+export async function fetchPlayerHistory(
+  userId: string,
+  options: {
+    type?: 'all' | 'bets' | 'deposits' | 'withdrawals';
+    page?: number;
+    limit?: number;
+    status?: string;
+  } = {}
+): Promise<PlayerDetailedHistoryResponse> {
+  const query = new URLSearchParams();
+  if (options.type) query.set('type', options.type);
+  if (options.page) query.set('page', options.page.toString());
+  if (options.limit) query.set('limit', options.limit.toString());
+  if (options.status && options.status !== 'ALL') query.set('status', options.status);
+
+  const res = await authFetch(`${API_BASE}/admin/api/users/${encodeURIComponent(userId)}/history?${query.toString()}`, {
+    cache: 'no-store'
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Failed to fetch player history');
+  }
   return res.json();
 }
 
