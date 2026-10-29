@@ -285,8 +285,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 11. Connect to Backend Socket.IO Server
   socketClient.on('userSubscribed', (data) => {
+    if (data?.isFrozen) {
+      notificationManager.error(
+        'Account Suspended',
+        data.error || 'Your account is under security review. Operations are restricted.',
+        { duration: 10000 }
+      );
+      apiClient.setToken(null);
+      socketClient.setAuthToken(null);
+      currentUser = null;
+      updateMarketingComplianceBadge(false);
+      setBalance(0);
+      return;
+    }
     updateMarketingComplianceBadge(Boolean(data?.isMarketing));
   });
+
+  socketClient.on('accountSuspended', (data) => {
+    notificationManager.error(
+      'Account Suspended',
+      data?.reason || data?.error || 'Your account has been suspended for security review.',
+      { duration: 10000 }
+    );
+    apiClient.setToken(null);
+    socketClient.setAuthToken(null);
+    currentUser = null;
+    updateMarketingComplianceBadge(false);
+    setBalance(0);
+  });
+
   socketClient.init();
 
   // 12. Synchronize Authoritative Profile & Balance from Backend
@@ -295,6 +322,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (token) {
       const profile = await apiClient.getProfile();
       if (profile && profile.id) {
+        if (profile.isFrozen) {
+          notificationManager.error(
+            'Account Suspended',
+            `Your account has been suspended: ${profile.freezeReason || 'Under security review'}`,
+            { duration: 10000 }
+          );
+          apiClient.setToken(null);
+          socketClient.setAuthToken(null);
+          currentUser = null;
+          updateMarketingComplianceBadge(false);
+          setBalance(0);
+          return;
+        }
+
         currentUser = profile;
         updateMarketingComplianceBadge(Boolean(profile.isMarketing));
         if (typeof profile.balance === 'number') {

@@ -30,6 +30,7 @@ export class SocketClient {
       maintenanceCancelled: [],
       maintenanceActive: [],
       systemAnnouncement: [],
+      accountSuspended: [],
     };
   }
 
@@ -113,6 +114,15 @@ export class SocketClient {
       }
     });
 
+    // Handle account suspension alert from server
+    this.socket.on('accountSuspended', (data) => {
+      console.warn('🚨 [Socket] Account suspended by server:', data?.reason || data?.error);
+      this.setAuthToken(null);
+      this.currentUser = null;
+      this.notify('accountSuspended', data);
+      window.dispatchEvent(new CustomEvent('skyrush:account-suspended', { detail: data }));
+    });
+
     // Handle user subscription feedback (Authoritative room assignment from Redis/Postgres)
     this.socket.on('userSubscribed', (data) => {
       if (data?.success) {
@@ -126,6 +136,9 @@ export class SocketClient {
       } else {
         console.warn('⚠️ [Socket] Session token expired or invalid:', data?.error);
         this.currentUser = null;
+        if (data?.isFrozen) {
+          this.setAuthToken(null);
+        }
       }
       this.notify('userSubscribed', data);
     });
