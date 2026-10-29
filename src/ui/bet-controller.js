@@ -291,6 +291,9 @@ export class BetController {
     } else if (this.state === 'placed') {
       // Cashout now!
       this.triggerCashout();
+    } else if (this.state === 'cashing_out' || this.state === 'cashed_out') {
+      // Ignore click if in-flight or already won
+      return;
     }
   }
 
@@ -298,45 +301,84 @@ export class BetController {
     if (this.state !== 'placed' || !this.activeBetId) return;
 
     const mult = multiplierOverride || window.currentFlightMultiplier || 1.0;
-    const estWin = Number((this.placedAmount * mult).toFixed(2));
 
-    this.state = 'cashed_out';
-    soundManager.playCashoutChime();
-
-    // Trigger celebration confetti
-    try {
-      confetti({
-        particleCount: 50,
-        spread: 60,
-        origin: { y: 0.8 },
-      });
-    } catch (_) {}
-
-    this.btnAction.className = 'main-action-btn btn-won';
-    this.btnTitle.textContent = `WON $${estWin.toFixed(2)}`;
+    // Transition to intermediate in-flight state and disable button to prevent double-clicks
+    this.state = 'cashing_out';
+    this.btnAction.classList.add('disabled');
+    this.btnTitle.textContent = 'CASHING OUT...';
     this.btnSub.textContent = `@ ${mult.toFixed(2)}x`;
 
-    this.activeBetId = null;
+    try {
+      const res = await this.socket.cashOut(this.index, mult);
+      if (res && res.success) {
+        // Authoritative confirmation received from server!
+        this.state = 'cashed_out';
+        this.activeBetId = null;
+        this.btnAction.classList.remove('disabled');
 
-    const res = await this.socket.cashOut(this.index, mult);
-    if (res && res.success) {
-      if (typeof res.balance === 'number') {
-        this.setBalance(res.balance);
+        if (typeof res.balance === 'number') {
+          this.setBalance(res.balance);
+        }
+
+        const finalMult = res.multiplier || mult;
+        const finalWin = res.winAmount || Number((this.placedAmount * finalMult).toFixed(2));
+
+        soundManager.playCashoutChime();
+
+        // Trigger celebration confetti
+        try {
+          confetti({
+            particleCount: 50,
+            spread: 60,
+            origin: { y: 0.8 },
+          });
+        } catch (_) {}
+
+        this.btnAction.className = 'main-action-btn btn-won';
+        this.btnTitle.textContent = `WON $${finalWin.toFixed(2)}`;
+        this.btnSub.textContent = `@ ${finalMult.toFixed(2)}x`;
+
+        notificationManager.success(
+          'Cash Out Successful! 💰',
+          `Cashed out $${finalWin.toFixed(2)} USD @ ${finalMult.toFixed(2)}x`
+        );
+      } else {
+        // Server rejected cashout (e.g. plane already crashed or timed out)
+        console.warn('[BetController] Cashout rejected by server:', res?.message);
+        this.activeBetId = null;
+        this.state = 'idle';
+        this.btnAction.classList.remove('disabled');
+        this.btnAction.className = 'main-action-btn btn-lost';
+        this.btnTitle.textContent = 'FLEW AWAY';
+        const crashMult = window.currentFlightMultiplier || mult;
+        this.btnSub.textContent = `@ ${crashMult.toFixed(2)}x`;
+
+        notificationManager.warning(
+          'Flew Away!',
+          res?.message || 'The plane crashed before cashout could be confirmed.'
+        );
+
+        setTimeout(() => {
+          if (this.state === 'idle') {
+            this.updateButtonView();
+          }
+        }, 2500);
       }
-      const finalMult = res.multiplier || mult;
-      const finalWin = res.winAmount || Number((this.placedAmount * finalMult).toFixed(2));
-      this.btnTitle.textContent = `WON $${finalWin.toFixed(2)}`;
-      this.btnSub.textContent = `@ ${finalMult.toFixed(2)}x`;
-    } else if (res && !res.success) {
-      console.warn('[BetController] Cashout rejected by server:', res.message);
+    } catch (err) {
+      console.error('[BetController] Cashout error:', err);
+      this.state = 'idle';
+      this.activeBetId = null;
+      this.btnAction.classList.remove('disabled');
+      this.updateButtonView();
     }
   }
 
   onRoundWaiting(countdown) {
     this.currentRoundStatus = 'waiting';
-    if (this.state === 'cashed_out') {
+    if (this.state === 'cashed_out' || this.state === 'cashing_out') {
       this.state = 'idle';
       this.activeBetId = null;
+      this.btnAction.classList.remove('disabled');
       this.updateButtonView();
     }
 
@@ -387,11 +429,12 @@ export class BetController {
       clearTimeout(this._autoCashoutFallbackTimer);
       this._autoCashoutFallbackTimer = null;
     }
-    if (this.state !== 'placed' && this.state !== 'queued') return;
+    if (this.state !== 'placed' && this.state !== 'queued' && this.state !== 'cashing_out') return;
     const mult = Number(data.multiplier) || this.autoCashoutMultiplier || 2.0;
     const finalWin = Number(data.winAmount) || Number((this.placedAmount * mult).toFixed(2));
 
     this.state = 'cashed_out';
+    this.btnAction.classList.remove('disabled');
     soundManager.playCashoutChime();
 
     try {
@@ -428,6 +471,7 @@ export class BetController {
       // Player lost
       this.state = 'idle';
       this.activeBetId = null;
+      this.btnAction.classList.remove('disabled');
       this.btnAction.className = 'main-action-btn btn-lost';
       this.btnTitle.textContent = 'FLEW AWAY';
       this.btnSub.textContent = `@ ${finalMultiplier.toFixed(2)}x`;
@@ -437,11 +481,16 @@ export class BetController {
           this.updateButtonView();
         }
       }, 2500);
+    } else if (this.state === 'cashing_out') {
+      // In-flight cashout will handle resolution when socket promise returns
     } else if (this.state === 'queued') {
       // Remains queued for next round
+    } else if (this.state === 'cashed_out') {
+      // Player already authoritatively cashed out before crash!
     } else {
       this.state = 'idle';
       this.activeBetId = null;
+      this.btnAction.classList.remove('disabled');
       this.updateButtonView();
     }
   }
