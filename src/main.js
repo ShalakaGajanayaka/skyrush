@@ -299,6 +299,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
     updateMarketingComplianceBadge(Boolean(data?.isMarketing));
+
+    // Reconnection Wallet Sync: Update authoritative balance immediately
+    if (typeof data?.balance === 'number') {
+      setBalance(data.balance);
+    }
+
+    // Refresh profile in background to sync active bet controllers (slot 1 & slot 2)
+    apiClient.getProfile().then((profile) => {
+      if (profile && profile.balance !== undefined) {
+        setBalance(profile.balance);
+        if (profile.username && currentUser) {
+          currentUser.username = profile.username;
+        }
+      }
+    }).catch(() => {});
+  });
+
+  socketClient.on('userRenamed', (data) => {
+    if (data?.newUsername && currentUser) {
+      currentUser.username = data.newUsername;
+    }
   });
 
   socketClient.on('accountSuspended', (data) => {
