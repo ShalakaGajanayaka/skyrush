@@ -1,0 +1,276 @@
+import { io } from 'socket.io-client';
+import { apiClient } from './api-client.js';
+import { SERVER_BASE_URL, resolveServerUrl } from '../config/environment.js';
+
+export class SocketClient {
+  constructor(customServerUrl = null) {
+    this.socket = null;
+    this.isConnected = false;
+    this.serverUrl = customServerUrl || SERVER_BASE_URL || resolveServerUrl();
+
+    this.authToken = localStorage.getItem('skyrush_auth_token') || localStorage.getItem('token') || null;
+    this.currentUser = null;
+    this.activeRoom = 'standard';
+
+    // Clock sync offset in ms
+    this.serverClockOffset = 0;
+
+    // Callbacks registry
+    this.listeners = {
+      connectionChange: [],
+      gameState: [],
+      flightSync: [],
+      newLiveBet: [],
+      newLiveBetsBatch: [],
+      betCashedOut: [],
+      betCancelled: [],
+      balanceUpdate: [],
+      userSubscribed: [],
+      maintenanceNotice: [],
+      maintenanceCancelled: [],
+      maintenanceActive: [],
+      systemAnnouncement: [],
+      accountSuspended: [],
+    };
+  }
+
+  setAuthToken(token) {
+    this.authToken = token;
+    if (token) {
+      localStorage.setItem('skyrush_auth_token', token);
+      if (this.socket && this.isConnected) {
+        this.socket.emit('subscribeUser', { token });
+      }
+    } else {
+      localStorage.removeItem('skyrush_auth_token');
+      this.currentUser = null;
+      this.activeRoom = 'standard';
+      if (this.socket && this.isConnected) {
+        this.socket.emit('unsubscribeUser');
+      }
+    }
+  }
+
+  init() {
+    if (this.socket) {
+      this.socket.disconnect();
+    }
+
+    const socketOptions = {
+      transports: ['websocket'],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 10000,
+    };
+
+    if (this.authToken) {
+      // Secure transport: Send token strictly in handshake auth payload (never in URL query strings)
+      socketOptions.auth = { token: this.authToken };
+    }
+
+    this.socket = io(this.serverUrl, socketOptions);
+
+    this.socket.on('connect', () => {
+      console.log('⚡ [Socket] Connected to SkyRush Engine at', this.serverUrl);
+      this.isConnected = true;
+      this.notify('connectionChange', true);
+
+      // 1. Initial clock sync
+      this.syncClock();
+
+      // 2. Authoritative room & user subscription
+      if (this.authToken) {
+        this.socket.emit('subscribeUser', { token: this.authToken });
+      }
+    });
+
+    this.socket.on('disconnect', (reason) => {
+      console.warn('⚠️ [Socket] Disconnected from server:', reason);
+      this.isConnected = false;
+      this.notify('connectionChange', false);
+    });
+
+    this.socket.on('connect_error', (err) => {
+      console.error('❌ [Socket] Connection error:', err.message);
+      this.isConnected = false;
+      this.notify('connectionChange', false);
+    });
+
+    // Handle pong clock sync
+    this.socket.on('pongSync', (data) => {
+      const t1 = Date.now();
+      const t0 = data?.clientSendTime || t1;
+      const serverReceive = data?.serverReceiveTime || t1;
+      const rtt = t1 - t0;
+      const estimatedServerTime = serverReceive + (rtt / 2.0);
+      const newOffset = estimatedServerTime - t1;
+
+      if (this.serverClockOffset === 0) {
+        this.serverClockOffset = newOffset;
+      } else {
+        this.serverClockOffset = (this.serverClockOffset * 0.7) + (newOffset * 0.3);
+      }
+    });
+
+    // Handle account suspension alert from server
+    this.socket.on('accountSuspended', (data) => {
+      console.warn('🚨 [Socket] Account suspended by server:', data?.reason || data?.error);
+      this.setAuthToken(null);
+      this.currentUser = null;
+      this.notify('accountSuspended', data);
+      window.dispatchEvent(new CustomEvent('skyrush:account-suspended', { detail: data }));
+    });
+
+    // Handle user subscription feedback (Authoritative room assignment from Redis/Postgres)
+    this.socket.on('userSubscribed', (data) => {
+      if (data?.success) {
+        this.currentUser = {
+          username: data.username,
+          isMarketing: !!data.isMarketing,
+          room: data.room || 'standard',
+        };
+        this.activeRoom = data.room || 'standard';
+        console.log(`👤 [Socket] Authenticated [${data.username}], assigned to [room:${this.activeRoom}]`);
+      } else {
+        console.warn('⚠️ [Socket] Session token expired or invalid:', data?.error);
+        this.currentUser = null;
+        if (data?.isFrozen) {
+          this.setAuthToken(null);
+        }
+      }
+      this.notify('userSubscribed', data);
+    });
+
+    // Handle authoritative game state broadcast
+    this.socket.on('gameState', (data) => {
+      if (!data) return;
+      // Room guard: Ignore packets belonging to other room
+      const incomingRoom = data.room || 'standard';
+      const isMarketing = this.currentUser?.isMarketing === true;
+      if (isMarketing && incomingRoom === 'standard') return;
+      if (!isMarketing && incomingRoom === 'marketing') return;
+
+      // Continuously calibrate server clock offset if server timestamp is present
+      if (data.serverTime && typeof data.serverTime === 'number') {
+        const measuredOffset = data.serverTime - Date.now();
+        if (this.serverClockOffset === 0) {
+          this.serverClockOffset = measuredOffset;
+        } else {
+          this.serverClockOffset = (this.serverClockOffset * 0.85) + (measuredOffset * 0.15);
+        }
+      }
+
+      this.notify('gameState', data);
+    });
+
+    // Handle high-frequency flight multiplier ticks
+    this.socket.on('flightSync', (data) => {
+      if (!data) return;
+      const incomingRoom = data.room || 'standard';
+      const isMarketing = this.currentUser?.isMarketing === true;
+      if (isMarketing && incomingRoom === 'standard') return;
+      if (!isMarketing && incomingRoom === 'marketing') return;
+
+      // Passive clock offset micro-refinement
+      if (data.serverTime && typeof data.serverTime === 'number') {
+        const measuredOffset = data.serverTime - Date.now();
+        if (this.serverClockOffset === 0) {
+          this.serverClockOffset = measuredOffset;
+        } else {
+          this.serverClockOffset = (this.serverClockOffset * 0.98) + (measuredOffset * 0.02);
+        }
+      }
+
+      this.notify('flightSync', data);
+    });
+
+    // Live Bets stream
+    this.socket.on('newLiveBet', (data) => this.notify('newLiveBet', data));
+    this.socket.on('newLiveBetsBatch', (data) => this.notify('newLiveBetsBatch', data));
+    this.socket.on('betCashedOut', (data) => this.notify('betCashedOut', data));
+    this.socket.on('betCancelled', (data) => this.notify('betCancelled', data));
+
+    // Balance update events
+    this.socket.on('userBalanceUpdated', (data) => {
+      if (data && typeof data.balance === 'number') {
+        this.notify('balanceUpdate', data);
+      }
+    });
+
+    // Auto cashout success event
+    this.socket.on('autoCashoutSuccess', (data) => this.notify('autoCashoutSuccess', data));
+
+    // System Maintenance & Global Announcements
+    this.socket.on('maintenanceNotice', (data) => this.notify('maintenanceNotice', data));
+    this.socket.on('maintenanceCancelled', (data) => this.notify('maintenanceCancelled', data));
+    this.socket.on('maintenanceActive', (data) => this.notify('maintenanceActive', data));
+    this.socket.on('systemAnnouncement', (data) => this.notify('systemAnnouncement', data));
+
+    // Recurring clock sync (every 15s)
+    setInterval(() => {
+      if (this.isConnected) {
+        this.syncClock();
+      }
+    }, 15000);
+  }
+
+  syncClock() {
+    if (this.socket && this.isConnected) {
+      this.socket.emit('pingSync', { clientSendTime: Date.now() });
+    }
+  }
+
+  /**
+   * Returns authoritative server timestamp synchronized via Cristian's algorithm + moving average
+   */
+  getServerTime() {
+    return Date.now() + this.serverClockOffset;
+  }
+
+  on(event, callback) {
+    if (!this.listeners[event]) {
+      this.listeners[event] = [];
+    }
+    this.listeners[event].push(callback);
+  }
+
+  // Defensive alias for event subscription
+  subscribe(event, callback) {
+    return this.on(event, callback);
+  }
+
+  notify(event, payload) {
+    if (this.listeners[event]) {
+      this.listeners[event].forEach(cb => {
+        try {
+          cb(payload);
+        } catch (e) {
+          console.error(`Error in listener for ${event}:`, e);
+        }
+      });
+    }
+  }
+
+  // --- Financial Actions (Unified with authoritative REST API) ---
+
+  async placeBet(betData) {
+    const betIndex = betData.betIndex || 1;
+    const amount = betData.amount || 1.0;
+    const autoCashout = betData.autoCashout != null ? betData.autoCashout : null;
+    return apiClient.placeBet(betIndex, amount, autoCashout);
+  }
+
+  async cancelBet(betIndexOrId, target = null) {
+    const betIndex = typeof betIndexOrId === 'number' ? betIndexOrId : (betIndexOrId?.betIndex || 1);
+    return apiClient.cancelBet(betIndex, target);
+  }
+
+  async cashOut(betIndexOrId, multiplier = null) {
+    const betIndex = typeof betIndexOrId === 'number' ? betIndexOrId : (betIndexOrId?.betIndex || 1);
+    return apiClient.cashOut(betIndex);
+  }
+}
+
+export const socketClient = new SocketClient();

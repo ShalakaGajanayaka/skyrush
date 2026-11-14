@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23e51b24'><path d='M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z'/></svg>" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="SkyRush - Next-Gen Aviator Crash Game with Hardware-Accelerated 60 FPS Canvas" />
+    <title>SkyRush | 2D Crash Game</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <!-- 1. APP TOP BAR -->
+    <header class="app-header">
+      <div class="header-left">
+        <a href="#" class="brand-logo" id="logoLink">
+          <span>Sky<span class="red">Rush</span></span>
+        </a>
+        <div class="connection-badge" id="connBadge">
+          <span class="dot"></span>
+          <span class="text">LIVE</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="balance-card has-zero-balance" id="headerBalanceCard" title="Click to Top-Up / Deposit">
+          <span class="wallet-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="4" width="20" height="16" rx="2"/>
+              <line x1="2" y1="10" x2="22" y2="10"/>
+            </svg>
+          </span>
+          <div class="balance-ticker-wrap">
+            <span class="ticker-text ticker-bal" id="userBalanceText">$0.00 USD</span>
+            <span class="ticker-text ticker-prompt">⚡ Deposit</span>
+          </div>
+        </div>
+
+        <!-- Provably Fair Button (Temporarily Hidden) -->
+        <button class="btn-icon" id="btnProvablyFair" title="Provably Fair Verification" style="display: none;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </button>
+
+        <!-- Audio Mute/Unmute -->
+        <button class="btn-icon" id="btnAudioToggle" title="Toggle Sound">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="audioIcon">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+          </svg>
+        </button>
+
+        <!-- User Account Button -->
+        <button class="btn-icon" id="btnUserAccount" title="Player Account / Profile">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- 2. MAIN APPLICATION WORKSPACE -->
+    <main class="main-layout">
+      <!-- Left Sidebar: Live Bets Table -->
+      <aside class="sidebar-bets" id="sidebarBets">
+        <!-- LiveBetsFeed component mounts here -->
+      </aside>
+
+      <!-- Center & Right: Flight Canvas Stage + Dual Bet Panels -->
+      <section class="game-stage-wrapper">
+        <!-- 60 FPS HTML5 Canvas Container -->
+        <div class="canvas-container">
+          <canvas id="flightCanvas"></canvas>
+        </div>
+
+        <!-- Dual Betting Panels Row -->
+        <div class="betting-panels-row">
+          <div class="bet-panel" id="betPanel1"></div>
+          <div class="bet-panel" id="betPanel2"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Application Bootstrapper -->
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
