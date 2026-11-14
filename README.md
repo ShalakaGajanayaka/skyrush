@@ -6,15 +6,15 @@ SkyRush is a full-stack real-time 2D Aviator / Crash style multiplayer casino ga
 
 This repository is organized as a monorepo containing three core components:
 
-* **[`2d_game_server/`](./2d_game_server/)**: NestJS WebSocket game backend and API engine (PostgreSQL, Redis, Socket.IO).
+* **[`server/`](./server/)**: NestJS WebSocket game backend and API engine (PostgreSQL, Redis, Socket.IO).
 * **[`game/`](./game/)**: Hardware-accelerated 60 FPS HTML5 Canvas crash game frontend client (Vite, JavaScript).
-* **[`casino_dashboard/`](./casino_dashboard/)**: Admin management portal, player analytics, cashier approvals, and streamer HUD (Next.js 16, React 19, Tailwind CSS).
+* **[`admin/`](./admin/)**: Admin management portal, player analytics, cashier approvals, and streamer HUD (Next.js 16, React 19, Tailwind CSS).
 
 ## Quick Start
 
-### 1. 2D Game Server
+### 1. Game Server
 ```bash
-cd 2d_game_server
+cd server
 npm install
 npm run start:dev
 ```
@@ -28,7 +28,7 @@ npm run dev
 
 ### 3. Casino Admin Dashboard
 ```bash
-cd casino_dashboard
+cd admin
 npm install
 npm run dev
 ```
