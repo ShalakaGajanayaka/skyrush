@@ -8,6 +8,7 @@ import { RedisService } from '../redis/redis.service';
 import { User } from './entities/user.entity';
 import { Transaction } from './entities/transaction.entity';
 import { BetHistory } from './entities/bet-history.entity';
+import { ReferralLedger } from './entities/referral-ledger.entity';
 import { GameService, GameStatus, GameRoomType } from '../game/game.service';
 
 export const COUNTRY_TO_CURRENCY: Record<string, string> = {
@@ -110,6 +111,10 @@ export interface UserProfile {
   flaggedReason?: string;
   isMarketing?: boolean;
   isMarketingAutoWin?: boolean;
+  referralCode?: string;
+  referralBalance?: number;
+  totalReferralEarnings?: number;
+  referralTier?: string;
 }
 
 @Injectable()
@@ -123,6 +128,8 @@ export class AuthService implements OnModuleInit {
     private readonly transactionRepository: Repository<Transaction>,
     @InjectRepository(BetHistory)
     private readonly betHistoryRepository: Repository<BetHistory>,
+    @InjectRepository(ReferralLedger)
+    private readonly referralLedgerRepository: Repository<ReferralLedger>,
     private readonly redisService: RedisService,
     @Inject(forwardRef(() => GameService))
     private readonly gameService: GameService,
@@ -360,7 +367,21 @@ export class AuthService implements OnModuleInit {
       flaggedReason: user.flaggedReason || undefined,
       isMarketing: !!user.isMarketing,
       isMarketingAutoWin: !!user.isMarketingAutoWin,
+      referralCode: user.referralCode || undefined,
+      referralBalance: Math.round(Number(user.referralBalance || 0) * 10000) / 10000,
+      totalReferralEarnings: Math.round(Number(user.totalReferralEarnings || 0) * 10000) / 10000,
+      referralTier: user.referralTier || 'BRONZE',
     };
+  }
+
+  public generateReferralCode(): string {
+    const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+    let code = 'SR';
+    const bytes = crypto.randomBytes(6);
+    for (let i = 0; i < 6; i++) {
+      code += chars[bytes[i] % chars.length];
+    }
+    return code;
   }
 
   async register(
@@ -369,6 +390,7 @@ export class AuthService implements OnModuleInit {
     currency?: string,
     clientIp?: string,
     requestedUsername?: string,
+    referralCode?: string,
   ): Promise<{ token: string; user: UserProfile }> {
     const clean = identifier?.trim().replace(/\s+/g, '');
     if (!clean || clean.length < 3) {
@@ -436,6 +458,26 @@ export class AuthService implements OnModuleInit {
     // Auto-generate or validate guaranteed unique gaming call-sign / username
     const uniqueUsername = await this.generateUniqueUsername(requestedUsername, clean);
 
+    let referredById: string | undefined = undefined;
+    if (referralCode && typeof referralCode === 'string' && referralCode.trim().length > 0) {
+      const cleanRef = referralCode.trim().toUpperCase();
+      const referrer = await this.userRepository.findOne({
+        where: { referralCode: cleanRef },
+      });
+      if (referrer) {
+        referredById = referrer.id;
+        this.logger.log(`[Referral] New user ${uniqueUsername} referred by ${referrer.username} (${cleanRef})`);
+      }
+    }
+
+    // Auto-generate guaranteed unique referral code for the new user
+    let userReferralCode = this.generateReferralCode();
+    let collision = await this.userRepository.findOne({ where: { referralCode: userReferralCode } });
+    while (collision) {
+      userReferralCode = this.generateReferralCode();
+      collision = await this.userRepository.findOne({ where: { referralCode: userReferralCode } });
+    }
+
     const newUser = this.userRepository.create({
       username: uniqueUsername,
       email: isEmail ? clean.toLowerCase() : undefined,
@@ -446,6 +488,11 @@ export class AuthService implements OnModuleInit {
       gamesPlayed: 0,
       totalWon: 0.0,
       bestMultiplier: 1.0,
+      referralCode: userReferralCode,
+      referredById,
+      referralBalance: 0.0,
+      totalReferralEarnings: 0.0,
+      referralTier: 'BRONZE',
     });
 
     const savedUser = await this.userRepository.save(newUser);
@@ -1093,6 +1140,11 @@ export class AuthService implements OnModuleInit {
       await this.gameService.registerRealCashout(betAmountUSD, winAmountUSD, isMarketingUser, roomType);
       this.gameService.markRealUserCashout(betRecord.id, currentMultiplier, displayWinAmount, roomType);
 
+      // Asynchronous referral wager rebate computation
+      this.processReferralWagerCommission(savedUser!.id, betAmountUSD).catch((refErr) => {
+        this.logger.error('Error processing referral wager commission on cashout', refErr);
+      });
+
       const sanitized = this.sanitizeUser(savedUser!);
       try {
         await this.redisService.set(`user:${savedUser!.username.toLowerCase()}`, JSON.stringify(sanitized), 86400 * 7);
@@ -1211,6 +1263,11 @@ export class AuthService implements OnModuleInit {
       this.gameService.markRealUserCashout(betRecord.id, targetMultiplier, displayWinAmount, roomType);
       this.gameService.notifyUserBalance(userObj.username, Number(userObj.balance), `🎯 Auto-Cashout Won: +$${displayWinAmount.toFixed(2)} USD`, 'USD');
       this.gameService.notifyAutoCashoutSuccess(userObj.username, betIndex, targetMultiplier, displayWinAmount, Number(userObj.balance), userId);
+
+      // Asynchronous referral wager rebate computation
+      this.processReferralWagerCommission(userObj.id, betAmountUSD).catch((refErr) => {
+        this.logger.error('Error processing referral wager commission on auto-cashout', refErr);
+      });
 
       const sanitized = this.sanitizeUser(userObj);
       try {
@@ -1380,6 +1437,13 @@ export class AuthService implements OnModuleInit {
           .into(BetHistory)
           .values(betHistoryEntries)
           .execute();
+
+        // Asynchronously process referral commission for settled losing bets
+        for (const entry of betHistoryEntries) {
+          if (entry.userId && entry.betAmount && Number(entry.betAmount) > 0) {
+            this.processReferralWagerCommission(entry.userId, Number(entry.betAmount)).catch(() => {});
+          }
+        }
 
         // Bulk increment gamesPlayed for distinct users
         const uniqueUserIds = Array.from(new Set(userIdsToIncrement));
@@ -1972,6 +2036,211 @@ export class AuthService implements OnModuleInit {
       token,
       user: this.sanitizeUser(savedUser),
     };
+  }
+
+  async processReferralWagerCommission(userId: string, betAmountUSD: number): Promise<void> {
+    if (!userId || betAmountUSD <= 0) return;
+    try {
+      // 1. Fetch user to check if referred (cached in Redis)
+      const cacheKey = `user_referred_by:${userId}`;
+      let referrerId = await this.redisService.get(cacheKey);
+
+      if (referrerId === null) {
+        const user = await this.userRepository.findOne({
+          where: { id: userId },
+          select: { id: true, referredById: true },
+        });
+        referrerId = user?.referredById || '';
+        await this.redisService.set(cacheKey, referrerId, 86400 * 7);
+      }
+
+      if (!referrerId || referrerId.trim() === '') return;
+
+      // 2. Fetch referrer to check status & tier
+      const referrer = await this.userRepository.findOne({
+        where: { id: referrerId },
+        select: {
+          id: true,
+          username: true,
+          referralTier: true,
+          referralBalance: true,
+          totalReferralEarnings: true,
+          isFrozen: true,
+        },
+      });
+      if (!referrer || referrer.isFrozen) return;
+
+      // 3. Determine tier rate
+      let rate = 0.005; // Bronze 0.5% default
+      if (referrer.referralTier === 'SILVER') rate = 0.0075;
+      else if (referrer.referralTier === 'GOLD') rate = 0.01;
+      else if (referrer.referralTier === 'VIP') rate = 0.015;
+
+      const earned = parseFloat((betAmountUSD * rate).toFixed(6));
+      if (earned < 0.0001) return;
+
+      // 4. Update referrer balance atomically
+      await this.userRepository.increment({ id: referrerId }, 'referralBalance', earned);
+      await this.userRepository.increment({ id: referrerId }, 'totalReferralEarnings', earned);
+
+      // 5. Save audit log in ReferralLedger
+      await this.referralLedgerRepository.save({
+        referrerId,
+        referredUserId: userId,
+        betAmount: betAmountUSD,
+        commissionRate: rate,
+        earnedAmount: earned,
+        type: 'WAGER_COMMISSION',
+      });
+
+      this.logger.log(
+        `[Referral Commission] Credited $${earned.toFixed(4)} USD to ${referrer.username} from bet ($${betAmountUSD.toFixed(2)}) by player ${userId}`,
+      );
+    } catch (err) {
+      this.logger.error(`Error processing referral wager commission for user ${userId}`, err);
+    }
+  }
+
+  async getReferralStats(token: string) {
+    let userId: string | null = null;
+    try {
+      userId = await this.redisService.get(`token_user:${token}`);
+    } catch {}
+
+    if (!userId) {
+      throw new UnauthorizedException('Invalid or expired session');
+    }
+
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // Auto-generate code if missing
+    if (!user.referralCode) {
+      user.referralCode = this.generateReferralCode();
+      await this.userRepository.update({ id: user.id }, { referralCode: user.referralCode });
+    }
+
+    // Count direct active referrals
+    const referredCount = await this.userRepository.count({
+      where: { referredById: user.id },
+    });
+
+    // Dynamic Tier progression
+    let currentTier = 'BRONZE';
+    let commissionRate = 0.005;
+    if (referredCount >= 50) {
+      currentTier = 'GOLD';
+      commissionRate = 0.01;
+    } else if (referredCount >= 10) {
+      currentTier = 'SILVER';
+      commissionRate = 0.0075;
+    }
+
+    if (user.referralTier !== currentTier) {
+      user.referralTier = currentTier;
+      await this.userRepository.update({ id: user.id }, { referralTier: currentTier });
+    }
+
+    // Recent 10 earnings
+    const recentLedger = await this.referralLedgerRepository.find({
+      where: { referrerId: user.id },
+      order: { createdAt: 'DESC' },
+      take: 10,
+    });
+
+    return {
+      referralCode: user.referralCode,
+      referralTier: user.referralTier,
+      commissionRate,
+      referralBalance: Math.round(Number(user.referralBalance || 0) * 10000) / 10000,
+      totalReferralEarnings: Math.round(Number(user.totalReferralEarnings || 0) * 10000) / 10000,
+      referredCount,
+      minClaimAmount: 1.0,
+      recentEarnings: recentLedger.map((l) => ({
+        id: l.id,
+        betAmount: Number(l.betAmount),
+        earnedAmount: Number(l.earnedAmount),
+        commissionRate: Number(l.commissionRate),
+        createdAt: l.createdAt,
+      })),
+    };
+  }
+
+  async claimReferralEarnings(token: string) {
+    let userId: string | null = null;
+    try {
+      userId = await this.redisService.get(`token_user:${token}`);
+    } catch {}
+
+    if (!userId) {
+      throw new UnauthorizedException('Invalid or expired session');
+    }
+
+    // Distributed lock to prevent concurrent double-claim race condition
+    const lockKey = `lock:referral:claim:${userId}`;
+    const acquired = await this.redisService.acquireTokenLock(lockKey, 5);
+    if (!acquired) {
+      throw new ConflictException('Claim already in progress. Please wait.');
+    }
+
+    try {
+      let claimedAmount = 0;
+      let newBalance = 0;
+
+      await this.userRepository.manager.transaction(async (manager) => {
+        const user = await manager.findOne(User, {
+          where: { id: userId },
+          lock: { mode: 'pessimistic_write' },
+        });
+
+        if (!user) {
+          throw new UnauthorizedException('User account not found');
+        }
+
+        const claimable = Number(user.referralBalance || 0);
+        if (claimable < 1.0) {
+          throw new BadRequestException('Minimum claim amount is $1.00 USD');
+        }
+
+        claimedAmount = parseFloat(claimable.toFixed(4));
+        const currentBal = Number(user.balance || 0);
+        newBalance = parseFloat((currentBal + claimedAmount).toFixed(4));
+
+        user.referralBalance = 0.0;
+        user.balance = newBalance;
+        await manager.save(user);
+
+        // Record in financial ledger
+        await manager.save(Transaction, {
+          userId: user.id,
+          type: 'REFERRAL_CLAIM',
+          amount: claimedAmount,
+          currency: 'USD',
+          multiplier: null,
+          balanceAfter: newBalance,
+        });
+      });
+
+      // Update cached session
+      const updatedUser = await this.userRepository.findOne({ where: { id: userId } });
+      if (updatedUser) {
+        const sanitized = this.sanitizeUser(updatedUser);
+        try {
+          await this.redisService.set(`user:${updatedUser.username.toLowerCase()}`, JSON.stringify(sanitized), 86400 * 7);
+        } catch {}
+      }
+
+      return {
+        success: true,
+        claimedAmount,
+        newBalance,
+        message: `Successfully transferred $${claimedAmount.toFixed(2)} USD to game balance!`,
+      };
+    } finally {
+      await this.redisService.releaseLock(lockKey, acquired);
+    }
   }
 
   detectCurrency(

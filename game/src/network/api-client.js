@@ -158,7 +158,7 @@ export class ApiClient {
     return res;
   }
 
-  async register(identifier, password, currency = 'USD', username = null) {
+  async register(identifier, password, currency = 'USD', username = null, referralCode = null) {
     const payload = {
       email: identifier,
       password,
@@ -167,6 +167,10 @@ export class ApiClient {
     if (username && typeof username === 'string' && username.trim()) {
       payload.username = username.trim();
     }
+    const pendingRef = referralCode || localStorage.getItem('skyrush_pending_ref');
+    if (pendingRef && typeof pendingRef === 'string' && pendingRef.trim()) {
+      payload.referralCode = pendingRef.trim().toUpperCase();
+    }
 
     const res = await this.request('/auth/register', {
       method: 'POST',
@@ -174,8 +178,19 @@ export class ApiClient {
     });
     if (res.success && res.token) {
       this.setToken(res.token);
+      localStorage.removeItem('skyrush_pending_ref');
     }
     return res;
+  }
+
+  async getReferralStats() {
+    return this.request('/auth/referral/stats');
+  }
+
+  async claimReferralEarnings() {
+    return this.request('/auth/referral/claim', {
+      method: 'POST',
+    });
   }
 
   async renameUser(newUsername) {

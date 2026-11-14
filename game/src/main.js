@@ -7,6 +7,7 @@ import { LiveBetsFeed } from './ui/live-bets.js';
 import { ProvablyFairModal } from './ui/provably-fair-modal.js';
 import { AuthModal } from './ui/auth-modal.js';
 import { DepositModal } from './ui/deposit-modal.js';
+import { ReferralModal } from './ui/referral-modal.js';
 import { notificationManager } from './ui/notification-manager.js';
 import { MaintenanceBanner } from './ui/maintenance-banner.js';
 import confetti from 'canvas-confetti';
@@ -24,7 +25,20 @@ window.isUserAuthenticated = isUserSignedIn;
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('🚀 [SkyRush] Initializing High-Performance Aviator Web Engine...');
 
-  // 0. Purge legacy hardcoded mock tokens from previous dev versions
+  // 0. Detect & capture referral link code (?ref=CODE)
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const refParam = urlParams.get('ref');
+    if (refParam && refParam.trim().length > 0) {
+      const cleanRef = refParam.trim().toUpperCase();
+      localStorage.setItem('skyrush_pending_ref', cleanRef);
+      console.log(`🤝 [Referral] Captured referral code from deep-link: ${cleanRef}`);
+    }
+  } catch (refErr) {
+    console.warn('[Referral] Failed to parse URL search params', refErr);
+  }
+
+  // 0.1 Purge legacy hardcoded mock tokens from previous dev versions
   const savedToken = localStorage.getItem('skyrush_auth_token');
   const LEGACY_MOCK_TOKEN = 'b83bba6036aaf920ce84812f4c0899bc15244c3b28ca51b2';
   if (savedToken === LEGACY_MOCK_TOKEN) {
@@ -156,6 +170,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   window.openDepositModal = (targetAmount = 0) => handleWalletAction(targetAmount);
   window.openAuthModal = () => authModal.show();
+
+  // 6.2 Initialize Referral & Affiliate Modal
+  const referralModal = new ReferralModal(getBalance, setBalance);
+  window.openReferralModal = () => referralModal.show();
+  const btnReferral = document.getElementById('btnReferral');
+  if (btnReferral) {
+    btnReferral.addEventListener('click', () => {
+      referralModal.show();
+    });
+  }
 
   const balanceCard = document.getElementById('headerBalanceCard') || document.querySelector('.balance-card');
   if (balanceCard) {

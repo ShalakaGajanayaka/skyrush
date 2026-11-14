@@ -35,7 +35,7 @@ export class AuthController {
     const clientIp = (req?.ip || req?.socket?.remoteAddress || '127.0.0.1').toString().split(',')[0].trim();
     const identifier = body.email || body.phoneNumber || body.mobile || '';
     const requestedUsername = body.username?.trim();
-    return this.authService.register(identifier, body.password, body.currency, clientIp, requestedUsername);
+    return this.authService.register(identifier, body.password, body.currency, clientIp, requestedUsername, body.referralCode);
   }
 
   @Post('login')
@@ -169,5 +169,23 @@ export class AuthController {
       throw new BadRequestException('targetCurrency is required');
     }
     return this.authService.changeCurrency(token, body.targetCurrency);
+  }
+
+  @Get('referral/stats')
+  async getReferralStats(
+    @Headers('authorization') authHeader: string,
+    @Query('token') queryToken?: string,
+  ) {
+    const token = this.extractToken(authHeader, queryToken);
+    return this.authService.getReferralStats(token);
+  }
+
+  @Post('referral/claim')
+  async claimReferralEarnings(
+    @Headers('authorization') authHeader: string,
+    @Body() body?: { token?: string },
+  ) {
+    const token = this.extractToken(authHeader, body?.token);
+    return this.authService.claimReferralEarnings(token);
   }
 }

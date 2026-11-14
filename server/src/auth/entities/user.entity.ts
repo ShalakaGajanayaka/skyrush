@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Check } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Check, Index } from 'typeorm';
 
 @Entity('users')
 @Check(`"balance" >= 0`)
@@ -53,6 +53,23 @@ export class User {
 
   @Column({ default: false })
   isMarketingAutoWin: boolean;
+
+  @Index({ unique: true })
+  @Column({ nullable: true, length: 16 })
+  referralCode: string;
+
+  @Index()
+  @Column({ nullable: true })
+  referredById: string;
+
+  @Column('decimal', { precision: 18, scale: 6, default: 0.0 })
+  referralBalance: number;
+
+  @Column('decimal', { precision: 18, scale: 6, default: 0.0 })
+  totalReferralEarnings: number;
+
+  @Column({ default: 'BRONZE', length: 20 })
+  referralTier: string;
 
   @CreateDateColumn()
   createdAt: Date;

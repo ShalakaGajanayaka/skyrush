@@ -265,6 +265,10 @@ export class AuthModal {
                     </button>
                   </div>
                 </div>
+                <div class="auth-field" style="margin-bottom: 12px;">
+                  <label style="display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; font-weight: 700;">REFERRAL / PROMO CODE (OPTIONAL)</label>
+                  <input type="text" id="regReferralCode" class="bet-amount-input" style="width: 100%; text-align: left; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 13px; text-transform: uppercase;" placeholder="e.g. SR8X9Y">
+                </div>
                 <button type="submit" class="main-action-btn btn-idle" style="width: 100%; padding: 10px; margin-top: 6px; font-size: 14px; font-weight: 700; height: 42px;">
                   CREATE FREE ACCOUNT
                 </button>
@@ -391,8 +395,9 @@ export class AuthModal {
       const email = document.getElementById('regEmail').value.trim();
       const pass = document.getElementById('regPassword').value;
       const chosenUsername = document.getElementById('regUsername').value.trim() || null;
+      const referralCode = document.getElementById('regReferralCode')?.value?.trim() || null;
 
-      const res = await apiClient.register(email, pass, 'USD', chosenUsername);
+      const res = await apiClient.register(email, pass, 'USD', chosenUsername, referralCode);
       if (res.success && res.token) {
         socketClient.setAuthToken(res.token);
         if (this.onAuthChanged) this.onAuthChanged(res.user);
@@ -533,6 +538,13 @@ export class AuthModal {
     const forms = document.getElementById('authFormsContainer');
     const inlineRename = document.getElementById('inlineRenameBox');
     if (inlineRename) inlineRename.style.display = 'none';
+
+    // Auto-populate captured referral code if present
+    const pendingRef = localStorage.getItem('skyrush_pending_ref');
+    const regRefInput = document.getElementById('regReferralCode');
+    if (regRefInput && pendingRef) {
+      regRefInput.value = pendingRef;
+    }
 
     if (user && user.id) {
       card.style.display = 'block';

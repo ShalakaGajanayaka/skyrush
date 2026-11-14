@@ -7,11 +7,12 @@ import { User } from './entities/user.entity';
 import { Transaction } from './entities/transaction.entity';
 import { DepositRequest } from './entities/deposit-request.entity';
 import { BetHistory } from './entities/bet-history.entity';
+import { ReferralLedger } from './entities/referral-ledger.entity';
 import { GameModule } from '../game/game.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Transaction, DepositRequest, BetHistory]),
+    TypeOrmModule.forFeature([User, Transaction, DepositRequest, BetHistory, ReferralLedger]),
     RedisModule,
     forwardRef(() => GameModule), // Use forwardRef to avoid circular dependencies just in case
   ],

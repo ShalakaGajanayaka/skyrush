@@ -42,6 +42,11 @@ export class RegisterDto {
   @IsString()
   @MaxLength(10)
   currency?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  referralCode?: string;
 }
 
 export class LoginDto {
