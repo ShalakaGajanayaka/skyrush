@@ -29,3 +29,4 @@ export class ReferralLedger {
   @CreateDateColumn()
   createdAt: Date;
 }
+
