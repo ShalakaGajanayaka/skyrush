@@ -7,6 +7,7 @@ import { DepositRequest, DepositStatus } from '../auth/entities/deposit-request.
 import { WithdrawalRequest, WithdrawalStatus } from '../auth/entities/withdrawal-request.entity';
 import { PoolAuditLog } from '../auth/entities/pool-audit-log.entity';
 import { BetHistory } from '../auth/entities/bet-history.entity';
+import { ReferralLedger } from '../auth/entities/referral-ledger.entity';
 import { RedisService } from '../redis/redis.service';
 import { GameService } from '../game/game.service';
 import { AuthService, PLATFORM_EXCHANGE_RATES } from '../auth/auth.service';
@@ -40,6 +41,8 @@ export class AdminService implements OnModuleInit {
     private readonly poolAuditRepo: Repository<PoolAuditLog>,
     @InjectRepository(BetHistory)
     private readonly betHistoryRepo: Repository<BetHistory>,
+    @InjectRepository(ReferralLedger)
+    private readonly referralLedgerRepo: Repository<ReferralLedger>,
     private readonly redisService: RedisService,
     private readonly gameService: GameService,
     @Inject(forwardRef(() => AuthService))
@@ -1989,6 +1992,331 @@ export class AdminService implements OnModuleInit {
       newBalance,
       delta,
       user: userObj,
+    };
+  }
+
+  // =========================================================================
+  // AFFILIATES & REFERRALS OPERATIONS
+  // =========================================================================
+
+  async getAdminReferralSummary() {
+    const cacheKey = 'cache:admin:referral_summary';
+    try {
+      const cached = await this.redisService.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    } catch {}
+
+    // 1. Total affiliates count (users who have recruited at least 1 person OR have earned referral commissions)
+    const totalAffiliates = await this.userRepo
+      .createQueryBuilder('u')
+      .where('u.referredById IS NOT NULL OR u.totalReferralEarnings > 0')
+      .getCount();
+
+    // 2. Total recruited pilots count (users registered under a referrer)
+    const totalReferredPilots = await this.userRepo
+      .createQueryBuilder('u')
+      .where('u.referredById IS NOT NULL')
+      .getCount();
+
+    // 3. Referral commissions breakdown from referral_ledger
+    const ledgerBreakdown = await this.referralLedgerRepo
+      .createQueryBuilder('l')
+      .select('COALESCE(SUM(l.earnedAmount), 0)', 'totalCommissions')
+      .addSelect("COALESCE(SUM(CASE WHEN l.type = 'FTD_COMMISSION' THEN l.earnedAmount ELSE 0 END), 0)", 'ftdCommissions')
+      .addSelect("COALESCE(SUM(CASE WHEN l.type = 'WAGER_COMMISSION' THEN l.earnedAmount ELSE 0 END), 0)", 'wagerCommissions')
+      .getRawOne();
+
+    // 4. Total Deposit Volume driven by referred pilots (only approved deposits)
+    const volumeResult = await this.depositRepo
+      .createQueryBuilder('d')
+      .select('COALESCE(SUM(d.amount), 0)', 'totalVolume')
+      .innerJoin(User, 'u', 'CAST(u.id AS text) = d.userId')
+      .where('u.referredById IS NOT NULL AND d.status = :status', { status: DepositStatus.APPROVED })
+      .getRawOne();
+
+    // 5. Total claimable referral liability (current user.referralBalance sum)
+    const liabilityResult = await this.userRepo
+      .createQueryBuilder('u')
+      .select('COALESCE(SUM(u.referralBalance), 0)', 'totalClaimable')
+      .getRawOne();
+
+    const summary = {
+      totalAffiliates,
+      totalReferredPilots,
+      totalDepositVolumeUSD: Math.round(Number(volumeResult?.totalVolume || 0) * 100) / 100,
+      totalCommissionsPaidUSD: Math.round(Number(ledgerBreakdown?.totalCommissions || 0) * 10000) / 10000,
+      totalFtdCommissionsUSD: Math.round(Number(ledgerBreakdown?.ftdCommissions || 0) * 10000) / 10000,
+      totalWagerCommissionsUSD: Math.round(Number(ledgerBreakdown?.wagerCommissions || 0) * 10000) / 10000,
+      totalClaimableLiabilityUSD: Math.round(Number(liabilityResult?.totalClaimable || 0) * 10000) / 10000,
+    };
+
+    try {
+      await this.redisService.set(cacheKey, JSON.stringify(summary), 20); // 20s TTL
+    } catch {}
+
+    return summary;
+  }
+
+  async getAdminAffiliatesList(options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    tier?: string;
+    sortBy?: string;
+    sortOrder?: 'ASC' | 'DESC';
+  }) {
+    const page = Math.max(1, Number(options.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(options.limit) || 20));
+    const offset = (page - 1) * limit;
+    const search = options.search?.trim().toLowerCase();
+    const tier = options.tier?.trim().toUpperCase();
+    const sortBy = options.sortBy || 'volume';
+    const sortOrder = options.sortOrder === 'ASC' ? 'ASC' : 'DESC';
+
+    const qb = this.userRepo
+      .createQueryBuilder('u')
+      .select('u.id', 'id')
+      .addSelect('u.username', 'username')
+      .addSelect('u.email', 'email')
+      .addSelect('u.referralCode', 'referralCode')
+      .addSelect('u.referralTier', 'referralTier')
+      .addSelect('u.referralBalance', 'referralBalance')
+      .addSelect('u.totalReferralEarnings', 'totalReferralEarnings')
+      .addSelect('u.isFrozen', 'isFrozen')
+      .addSelect('u.createdAt', 'createdAt')
+      // Subquery for referred pilots count
+      .leftJoin(
+        (subQb) =>
+          subQb
+            .select('cu.referredById', 'ref_parent_id')
+            .addSelect('COUNT(cu.id)', 'pilots_count')
+            .from(User, 'cu')
+            .where('cu.referredById IS NOT NULL')
+            .groupBy('cu.referredById'),
+        'p_cnt',
+        'p_cnt.ref_parent_id = CAST(u.id AS text)',
+      )
+      // Subquery for total deposit volume driven by this promoter's pilots
+      .leftJoin(
+        (subQb) =>
+          subQb
+            .select('pu.referredById', 'vol_parent_id')
+            .addSelect('COALESCE(SUM(d.amount), 0)', 'total_volume')
+            .addSelect('COUNT(DISTINCT d.userId)', 'active_pilots_count')
+            .from(DepositRequest, 'd')
+            .innerJoin(User, 'pu', 'CAST(pu.id AS text) = d.userId')
+            .where('d.status = :depStatus', { depStatus: DepositStatus.APPROVED })
+            .andWhere('pu.referredById IS NOT NULL')
+            .groupBy('pu.referredById'),
+        'vol',
+        'vol.vol_parent_id = CAST(u.id AS text)',
+      )
+      // Subquery for ledger commission breakdown (FTD vs Wager)
+      .leftJoin(
+        (subQb) =>
+          subQb
+            .select('l.referrerId', 'led_referrer_id')
+            .addSelect("COALESCE(SUM(CASE WHEN l.type = 'FTD_COMMISSION' THEN l.earnedAmount ELSE 0 END), 0)", 'ftd_earned')
+            .addSelect("COALESCE(SUM(CASE WHEN l.type = 'WAGER_COMMISSION' THEN l.earnedAmount ELSE 0 END), 0)", 'wager_earned')
+            .from(ReferralLedger, 'l')
+            .groupBy('l.referrerId'),
+        'led',
+        'led.led_referrer_id = CAST(u.id AS text)',
+      )
+      .addSelect('COALESCE(p_cnt.pilots_count, 0)', 'referredPilotsCount')
+      .addSelect('COALESCE(vol.active_pilots_count, 0)', 'activePilotsCount')
+      .addSelect('COALESCE(vol.total_volume, 0)', 'totalVolumeUSD')
+      .addSelect('COALESCE(led.ftd_earned, 0)', 'ftdEarnedUSD')
+      .addSelect('COALESCE(led.wager_earned, 0)', 'wagerEarnedUSD');
+
+    // Filter promoters
+    if (search) {
+      qb.where('(LOWER(u.username) LIKE :search OR LOWER(u.referralCode) LIKE :search)', {
+        search: `%${search}%`,
+      });
+    } else {
+      qb.where('(p_cnt.pilots_count > 0 OR u.totalReferralEarnings > 0 OR u.referralBalance > 0)');
+    }
+
+    if (tier && ['BRONZE', 'SILVER', 'GOLD', 'VIP'].includes(tier)) {
+      qb.andWhere('u.referralTier = :tier', { tier });
+    }
+
+    // Sort mapping
+    if (sortBy === 'volume') {
+      qb.orderBy('COALESCE(vol.total_volume, 0)', sortOrder);
+    } else if (sortBy === 'commission' || sortBy === 'earnings') {
+      qb.orderBy('u.totalReferralEarnings', sortOrder);
+    } else if (sortBy === 'pilots') {
+      qb.orderBy('COALESCE(p_cnt.pilots_count, 0)', sortOrder);
+    } else if (sortBy === 'balance') {
+      qb.orderBy('u.referralBalance', sortOrder);
+    } else {
+      qb.orderBy('u.createdAt', sortOrder);
+    }
+
+    const totalCount = await qb.getCount();
+
+    const rawAffiliates = await qb
+      .limit(limit)
+      .offset(offset)
+      .getRawMany();
+
+    const affiliates = rawAffiliates.map((row) => ({
+      id: row.id,
+      username: row.username,
+      email: row.email,
+      referralCode: row.referralCode,
+      referralTier: row.referralTier || 'BRONZE',
+      referralBalanceUSD: Math.round(Number(row.referralBalance || 0) * 10000) / 10000,
+      totalReferralEarningsUSD: Math.round(Number(row.totalReferralEarnings || 0) * 10000) / 10000,
+      isFrozen: Boolean(row.isFrozen),
+      createdAt: row.createdAt,
+      referredPilotsCount: Number(row.referredPilotsCount || 0),
+      activePilotsCount: Number(row.activePilotsCount || 0),
+      totalVolumeUSD: Math.round(Number(row.totalVolumeUSD || 0) * 100) / 100,
+      ftdEarnedUSD: Math.round(Number(row.ftdEarnedUSD || 0) * 10000) / 10000,
+      wagerEarnedUSD: Math.round(Number(row.wagerEarnedUSD || 0) * 10000) / 10000,
+    }));
+
+    return {
+      success: true,
+      page,
+      limit,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit) || 1,
+      affiliates,
+    };
+  }
+
+  async getAdminAffiliateNetwork(referrerId: string) {
+    const affiliate = await this.userRepo.findOne({ where: { id: referrerId } });
+    if (!affiliate) {
+      throw new NotFoundException('Affiliate not found');
+    }
+
+    // Query all pilots recruited by this affiliate
+    const pilotsRaw = await this.userRepo
+      .createQueryBuilder('u')
+      .select('u.id', 'id')
+      .addSelect('u.username', 'username')
+      .addSelect('u.email', 'email')
+      .addSelect('u.isFrozen', 'isFrozen')
+      .addSelect('u.createdAt', 'createdAt')
+      // Total approved deposits from this pilot
+      .leftJoin(
+        (subQb) =>
+          subQb
+            .select('d.userId', 'dep_user_id')
+            .addSelect('COALESCE(SUM(d.amount), 0)', 'total_deposited')
+            .addSelect('COUNT(d.id)', 'approved_deposits_count')
+            .from(DepositRequest, 'd')
+            .where('d.status = :status', { status: DepositStatus.APPROVED })
+            .groupBy('d.userId'),
+        'dep',
+        'dep.dep_user_id = CAST(u.id AS text)',
+      )
+      // Pending deposits from this pilot
+      .leftJoin(
+        (subQb) =>
+          subQb
+            .select('pd.userId', 'pending_user_id')
+            .addSelect('COUNT(pd.id)', 'pending_deposits_count')
+            .from(DepositRequest, 'pd')
+            .where('pd.status = :pStatus', { pStatus: DepositStatus.PENDING })
+            .groupBy('pd.userId'),
+        'pdep',
+        'pdep.pending_user_id = CAST(u.id AS text)',
+      )
+      // Commissions earned from this specific pilot in referral_ledger
+      .leftJoin(
+        ReferralLedger,
+        'l',
+        'l.referredUserId = CAST(u.id AS text) AND l.referrerId = :refId',
+        { refId: referrerId },
+      )
+      .addSelect('COALESCE(dep.total_deposited, 0)', 'totalDeposited')
+      .addSelect('COALESCE(dep.approved_deposits_count, 0)', 'approvedDepositsCount')
+      .addSelect('COALESCE(pdep.pending_deposits_count, 0)', 'pendingDepositsCount')
+      .addSelect(
+        "COALESCE(SUM(CASE WHEN l.type = 'FTD_COMMISSION' THEN l.earnedAmount ELSE 0 END), 0)",
+        'ftdEarned',
+      )
+      .addSelect(
+        "COALESCE(SUM(CASE WHEN l.type = 'WAGER_COMMISSION' THEN l.earnedAmount ELSE 0 END), 0)",
+        'wagerEarned',
+      )
+      .addSelect('COALESCE(SUM(l.earnedAmount), 0)', 'totalEarned')
+      .where('u.referredById = :refId', { refId: referrerId })
+      .groupBy('u.id')
+      .addGroupBy('u.username')
+      .addGroupBy('u.email')
+      .addGroupBy('u.isFrozen')
+      .addGroupBy('u.createdAt')
+      .addGroupBy('dep.total_deposited')
+      .addGroupBy('dep.approved_deposits_count')
+      .addGroupBy('pdep.pending_deposits_count')
+      .orderBy('u.createdAt', 'DESC')
+      .getRawMany();
+
+    const pilots = pilotsRaw.map((p) => ({
+      id: p.id,
+      username: p.username,
+      email: p.email,
+      isFrozen: Boolean(p.isFrozen),
+      joinedAt: p.createdAt,
+      totalDepositedUSD: Math.round(Number(p.totalDeposited || 0) * 100) / 100,
+      approvedDepositsCount: Number(p.approvedDepositsCount || 0),
+      pendingDepositsCount: Number(p.pendingDepositsCount || 0),
+      ftdEarnedUSD: Math.round(Number(p.ftdEarned || 0) * 10000) / 10000,
+      wagerEarnedUSD: Math.round(Number(p.wagerEarned || 0) * 10000) / 10000,
+      totalEarnedUSD: Math.round(Number(p.totalEarned || 0) * 10000) / 10000,
+    }));
+
+    return {
+      success: true,
+      affiliate: {
+        id: affiliate.id,
+        username: affiliate.username,
+        email: affiliate.email,
+        referralCode: affiliate.referralCode,
+        referralTier: affiliate.referralTier || 'BRONZE',
+        referralBalanceUSD: Math.round(Number(affiliate.referralBalance || 0) * 10000) / 10000,
+        totalReferralEarningsUSD: Math.round(Number(affiliate.totalReferralEarnings || 0) * 10000) / 10000,
+        isFrozen: Boolean(affiliate.isFrozen),
+        createdAt: affiliate.createdAt,
+      },
+      pilotsCount: pilots.length,
+      pilots,
+    };
+  }
+
+  async updateAdminAffiliateTier(referrerId: string, tier: string, adminUser: string = 'Super Admin') {
+    const validTiers = ['BRONZE', 'SILVER', 'GOLD', 'VIP'];
+    const cleanTier = (tier || '').trim().toUpperCase();
+    if (!validTiers.includes(cleanTier)) {
+      throw new BadRequestException(`Invalid tier. Allowed: ${validTiers.join(', ')}`);
+    }
+
+    const affiliate = await this.userRepo.findOne({ where: { id: referrerId } });
+    if (!affiliate) {
+      throw new NotFoundException('Affiliate not found');
+    }
+
+    const previousTier = affiliate.referralTier || 'BRONZE';
+    affiliate.referralTier = cleanTier;
+    await this.userRepo.save(affiliate);
+
+    this.logger.log(`[Admin] Affiliate ${affiliate.username} tier changed from ${previousTier} to ${cleanTier} by ${adminUser}`);
+
+    return {
+      success: true,
+      message: `Affiliate ${affiliate.username} tier adjusted to ${cleanTier}`,
+      affiliate: {
+        id: affiliate.id,
+        username: affiliate.username,
+        referralTier: affiliate.referralTier,
+      },
     };
   }
 }

@@ -1,4 +1,16 @@
-import { DashboardStats, DepositRequest, WithdrawalRequest, User, PaymentChannel, PoolAuditLog, MaintenanceStatus, PlayerDetailedHistoryResponse } from './types';
+import {
+  DashboardStats,
+  DepositRequest,
+  WithdrawalRequest,
+  User,
+  PaymentChannel,
+  PoolAuditLog,
+  MaintenanceStatus,
+  PlayerDetailedHistoryResponse,
+  ReferralSummaryStats,
+  AdminAffiliatesResponse,
+  AdminAffiliateNetworkResponse,
+} from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -308,6 +320,60 @@ export async function fetchPlayerHistory(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.message || 'Failed to fetch player history');
+  }
+  return res.json();
+}
+
+export async function fetchReferralSummary(): Promise<ReferralSummaryStats> {
+  const res = await authFetch(`${API_BASE}/admin/api/referrals/summary`, {
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error('Failed to fetch referral summary');
+  return res.json();
+}
+
+export async function fetchAdminAffiliates(options: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  tier?: string;
+  sortBy?: string;
+  sortOrder?: 'ASC' | 'DESC';
+} = {}): Promise<AdminAffiliatesResponse> {
+  const query = new URLSearchParams();
+  if (options.page) query.set('page', options.page.toString());
+  if (options.limit) query.set('limit', options.limit.toString());
+  if (options.search) query.set('search', options.search);
+  if (options.tier && options.tier !== 'ALL') query.set('tier', options.tier);
+  if (options.sortBy) query.set('sortBy', options.sortBy);
+  if (options.sortOrder) query.set('sortOrder', options.sortOrder);
+
+  const res = await authFetch(`${API_BASE}/admin/api/referrals/affiliates?${query.toString()}`, {
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error('Failed to fetch affiliates list');
+  return res.json();
+}
+
+export async function fetchAdminAffiliateNetwork(userId: string): Promise<AdminAffiliateNetworkResponse> {
+  const res = await authFetch(`${API_BASE}/admin/api/referrals/affiliate/${encodeURIComponent(userId)}/network`, {
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Failed to fetch affiliate network');
+  }
+  return res.json();
+}
+
+export async function updateAffiliateTier(userId: string, tier: string): Promise<{ success: boolean; message: string }> {
+  const res = await authFetch(`${API_BASE}/admin/api/referrals/affiliate/${encodeURIComponent(userId)}/tier`, {
+    method: 'PATCH',
+    body: JSON.stringify({ tier }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Failed to update affiliate tier');
   }
   return res.json();
 }

@@ -14,6 +14,7 @@ import {
   Radio,
   ArrowUpRight,
   Sliders,
+  Share2,
 } from 'lucide-react';
 import { disconnectSocket } from '@/lib/socket';
 
@@ -53,6 +54,11 @@ export default function Sidebar({ pendingCount = 0, pendingWithdrawalCount = 0, 
       label: 'Players Directory',
       href: '/players',
       icon: Users,
+    },
+    {
+      label: 'Affiliates & Referrals',
+      href: '/referrals',
+      icon: Share2,
     },
     {
       label: 'Payment Channels',

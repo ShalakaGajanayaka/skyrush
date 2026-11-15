@@ -137,3 +137,70 @@ export interface PlayerDetailedHistoryResponse {
   deposits: DepositRequest[];
   withdrawals: WithdrawalRequest[];
 }
+
+export interface ReferralSummaryStats {
+  totalAffiliates: number;
+  totalReferredPilots: number;
+  totalDepositVolumeUSD: number;
+  totalCommissionsPaidUSD: number;
+  totalFtdCommissionsUSD: number;
+  totalWagerCommissionsUSD: number;
+  totalClaimableLiabilityUSD: number;
+}
+
+export interface AdminAffiliateItem {
+  id: string;
+  username: string;
+  email?: string;
+  referralCode: string;
+  referralTier: 'BRONZE' | 'SILVER' | 'GOLD' | 'VIP';
+  referralBalanceUSD: number;
+  totalReferralEarningsUSD: number;
+  isFrozen: boolean;
+  createdAt: string;
+  referredPilotsCount: number;
+  activePilotsCount: number;
+  totalVolumeUSD: number;
+  ftdEarnedUSD: number;
+  wagerEarnedUSD: number;
+}
+
+export interface AdminAffiliatesResponse {
+  success: boolean;
+  page: number;
+  limit: number;
+  totalCount: number;
+  totalPages: number;
+  affiliates: AdminAffiliateItem[];
+}
+
+export interface ReferredPilotDetail {
+  id: string;
+  username: string;
+  email?: string;
+  isFrozen: boolean;
+  joinedAt: string;
+  totalDepositedUSD: number;
+  approvedDepositsCount: number;
+  pendingDepositsCount: number;
+  ftdEarnedUSD: number;
+  wagerEarnedUSD: number;
+  totalEarnedUSD: number;
+}
+
+export interface AdminAffiliateNetworkResponse {
+  success: boolean;
+  affiliate: {
+    id: string;
+    username: string;
+    email?: string;
+    referralCode: string;
+    referralTier: string;
+    referralBalanceUSD: number;
+    totalReferralEarningsUSD: number;
+    isFrozen: boolean;
+    createdAt: string;
+  };
+  pilotsCount: number;
+  pilots: ReferredPilotDetail[];
+}

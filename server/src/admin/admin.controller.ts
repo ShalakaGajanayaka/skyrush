@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Body,
   Param,
   Query,
@@ -614,6 +615,53 @@ export class AdminController {
       body.reason || 'Administrative Balance Adjustment',
       verifiedAdmin,
     );
+  }
+
+  // -------------------------------------------------------------
+  // AFFILIATES & REFERRAL AUDIT API (Admin Guarded)
+  // -------------------------------------------------------------
+
+  @UseGuards(AdminAuthGuard)
+  @Get('api/referrals/summary')
+  async getReferralSummary() {
+    return this.adminService.getAdminReferralSummary();
+  }
+
+  @UseGuards(AdminAuthGuard)
+  @Get('api/referrals/affiliates')
+  async getAffiliatesList(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('search') search?: string,
+    @Query('tier') tier?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: 'ASC' | 'DESC',
+  ) {
+    return this.adminService.getAdminAffiliatesList({
+      page,
+      limit,
+      search,
+      tier,
+      sortBy,
+      sortOrder,
+    });
+  }
+
+  @UseGuards(AdminAuthGuard)
+  @Get('api/referrals/affiliate/:userId/network')
+  async getAffiliateNetwork(@Param('userId') userId: string) {
+    return this.adminService.getAdminAffiliateNetwork(userId);
+  }
+
+  @UseGuards(AdminAuthGuard)
+  @Patch('api/referrals/affiliate/:userId/tier')
+  async updateAffiliateTier(
+    @Req() req: any,
+    @Param('userId') userId: string,
+    @Body() body: { tier: string },
+  ) {
+    const verifiedAdmin = req.adminUser || 'Admin';
+    return this.adminService.updateAdminAffiliateTier(userId, body.tier, verifiedAdmin);
   }
 
   // -------------------------------------------------------------
