@@ -187,6 +187,10 @@ export class ApiClient {
     return this.request('/auth/referral/stats');
   }
 
+  async getReferralNetwork(page = 1, limit = 20) {
+    return this.request(`/auth/referral/network?page=${page}&limit=${limit}`);
+  }
+
   async claimReferralEarnings() {
     return this.request('/auth/referral/claim', {
       method: 'POST',

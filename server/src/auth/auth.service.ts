@@ -2317,6 +2317,106 @@ export class AuthService implements OnModuleInit {
     };
   }
 
+  async getReferralNetwork(token: string, page = 1, limit = 20) {
+    let userId: string | null = null;
+    try {
+      userId = await this.redisService.get(`token_user:${token}`);
+    } catch {}
+
+    if (!userId) {
+      throw new UnauthorizedException('Invalid or expired session');
+    }
+
+    const cacheKey = `cache:ref_network:${userId}:${page}:${limit}`;
+    try {
+      const cached = await this.redisService.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    } catch {}
+
+    const totalCount = await this.userRepository.count({
+      where: { referredById: userId },
+    });
+
+    const offset = (page - 1) * limit;
+
+    const rawRows = await this.userRepository
+      .createQueryBuilder('u')
+      .select('u.id', 'id')
+      .addSelect('u.username', 'username')
+      .addSelect('u.createdAt', 'createdAt')
+      .leftJoin(
+        (qb) =>
+          qb
+            .select('d.userId', 'dep_user_id')
+            .addSelect('COALESCE(SUM(d.amount), 0)', 'total_deposited')
+            .from(DepositRequest, 'd')
+            .where('d.status = :depStatus', { depStatus: DepositStatus.APPROVED })
+            .groupBy('d.userId'),
+        'dep',
+        'dep.dep_user_id = u.id',
+      )
+      .leftJoin(
+        ReferralLedger,
+        'l',
+        'l.referredUserId = u.id AND l.referrerId = :refId',
+        { refId: userId },
+      )
+      .addSelect('COALESCE(dep.total_deposited, 0)', 'totalDeposited')
+      .addSelect(
+        "COALESCE(SUM(CASE WHEN l.type = 'FTD_COMMISSION' THEN l.earnedAmount ELSE 0 END), 0)",
+        'ftdEarned',
+      )
+      .addSelect(
+        "COALESCE(SUM(CASE WHEN l.type = 'WAGER_COMMISSION' THEN l.earnedAmount ELSE 0 END), 0)",
+        'wagerEarned',
+      )
+      .addSelect('COALESCE(SUM(l.earnedAmount), 0)', 'totalEarned')
+      .where('u.referredById = :refId', { refId: userId })
+      .groupBy('u.id')
+      .addGroupBy('u.username')
+      .addGroupBy('u.createdAt')
+      .addGroupBy('dep.total_deposited')
+      .orderBy('u.createdAt', 'DESC')
+      .limit(limit)
+      .offset(offset)
+      .getRawMany();
+
+    const pilots = rawRows.map((row) => {
+      const rawUsername = row.username || 'Pilot';
+      let maskedUsername = 'Pilot_***';
+      if (rawUsername.length <= 3) {
+        maskedUsername = rawUsername[0] + '***';
+      } else {
+        maskedUsername = rawUsername.slice(0, 2) + '***' + rawUsername.slice(-2);
+      }
+
+      return {
+        id: row.id,
+        maskedUsername,
+        joinedAt: row.createdAt,
+        totalDeposited: Math.round(Number(row.totalDeposited || 0) * 100) / 100,
+        ftdEarned: Math.round(Number(row.ftdEarned || 0) * 10000) / 10000,
+        wagerEarned: Math.round(Number(row.wagerEarned || 0) * 10000) / 10000,
+        totalEarned: Math.round(Number(row.totalEarned || 0) * 10000) / 10000,
+      };
+    });
+
+    const result = {
+      success: true,
+      total: totalCount,
+      page,
+      limit,
+      totalPages: Math.ceil(totalCount / limit) || 1,
+      pilots,
+    };
+
+    try {
+      await this.redisService.set(cacheKey, JSON.stringify(result), 30);
+    } catch {}
+
+    return result;
+  }
+
   async claimReferralEarnings(token: string) {
     let userId: string | null = null;
     try {

@@ -180,6 +180,19 @@ export class AuthController {
     return this.authService.getReferralStats(token);
   }
 
+  @Get('referral/network')
+  async getReferralNetwork(
+    @Headers('authorization') authHeader: string,
+    @Query('token') queryToken?: string,
+    @Query('page') pageStr?: string,
+    @Query('limit') limitStr?: string,
+  ) {
+    const token = this.extractToken(authHeader, queryToken);
+    const page = Math.max(1, parseInt(pageStr || '1', 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(limitStr || '20', 10) || 20));
+    return this.authService.getReferralNetwork(token, page, limit);
+  }
+
   @Post('referral/claim')
   async claimReferralEarnings(
     @Headers('authorization') authHeader: string,

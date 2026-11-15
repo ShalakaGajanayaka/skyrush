@@ -8,6 +8,9 @@ export class ReferralModal {
     this.setBalance = setBalance;
     this.modalEl = null;
     this.stats = null;
+    this.network = null;
+    this.currentTab = 'overview'; // 'overview' | 'pilots'
+    this.networkPage = 1;
     this.init();
   }
 
@@ -30,83 +33,113 @@ export class ReferralModal {
           <button class="modal-close" id="btnCloseReferralModal" title="Close">&times;</button>
         </div>
 
+        <!-- Navigation Tabs -->
+        <div class="ref-tabs-nav">
+          <button class="ref-tab-btn active" id="tabBtnOverview">
+            <span>📊 Overview & Share</span>
+          </button>
+          <button class="ref-tab-btn" id="tabBtnPilots">
+            <span>👥 My Pilots (<span id="refPilotsTabCount">0</span>)</span>
+          </button>
+        </div>
+
         <div class="modal-body referral-modal-body">
-          <!-- 5% FTD Golden Callout Banner -->
-          <div class="ref-bonus-callout">
-            <div class="callout-header">
-              <span class="callout-pill">🔥 5% FTD CASH BONUS</span>
-              <span class="callout-sub">Instant On 1st Deposit</span>
+          <!-- TAB 1: OVERVIEW & SHARE -->
+          <div class="ref-tab-pane active" id="tabPaneOverview">
+            <!-- 5% FTD Golden Callout Banner -->
+            <div class="ref-bonus-callout">
+              <div class="callout-header">
+                <span class="callout-pill">🔥 5% FTD CASH BONUS</span>
+                <span class="callout-sub">Instant On 1st Deposit</span>
+              </div>
+              <div class="callout-desc">
+                When a pilot registers with your code and makes their <strong>First Deposit</strong>, you immediately receive <strong>5.0% cash</strong> in your affiliate wallet!
+              </div>
             </div>
-            <div class="callout-desc">
-              When a pilot registers with your code and makes their <strong>First Deposit</strong>, you immediately receive <strong>5.0% cash</strong> in your affiliate wallet!
-            </div>
-          </div>
 
-          <!-- Tier & Status Badge -->
-          <div class="referral-tier-banner">
-            <div class="tier-info">
-              <span class="tier-tag" id="refTierBadge">BRONZE PILOT</span>
-              <span class="tier-rate" id="refTierRate">0.50% Flight Turnover</span>
+            <!-- Tier & Status Badge -->
+            <div class="referral-tier-banner">
+              <div class="tier-info">
+                <span class="tier-tag" id="refTierBadge">BRONZE PILOT</span>
+                <span class="tier-rate" id="refTierRate">0.50% Flight Turnover</span>
+              </div>
+              <div class="tier-desc">Continuous lifetime wager rebates on every single flight round played.</div>
             </div>
-            <div class="tier-desc">Continuous lifetime wager rebates on every single flight round played.</div>
-          </div>
 
-          <!-- Share Link Card -->
-          <div class="ref-link-card">
-            <label class="ref-label">YOUR UNIQUE REFERRAL LINK</label>
-            <div class="ref-input-group">
-              <input type="text" id="refLinkInput" readonly value="Loading..." />
-              <button class="btn-copy-ref" id="btnCopyRefLink">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-                <span id="btnCopyText">Copy</span>
+            <!-- Share Link Card -->
+            <div class="ref-link-card">
+              <label class="ref-label">YOUR UNIQUE REFERRAL LINK</label>
+              <div class="ref-input-group">
+                <input type="text" id="refLinkInput" readonly value="Loading..." />
+                <button class="btn-copy-ref" id="btnCopyRefLink">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  <span id="btnCopyText">Copy</span>
+                </button>
+              </div>
+              <div class="ref-social-share">
+                <button class="btn-share-social whatsapp" id="btnShareWhatsApp">
+                  <span>📱 WhatsApp</span>
+                </button>
+                <button class="btn-share-social telegram" id="btnShareTelegram">
+                  <span>✈️ Telegram</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Metrics Grid (4-box layout) -->
+            <div class="ref-stats-grid">
+              <div class="ref-stat-box">
+                <span class="stat-num" id="refInvitedCount">0</span>
+                <span class="stat-name">Invited Pilots</span>
+              </div>
+              <div class="ref-stat-box highlight">
+                <span class="stat-num" id="refClaimableBalance">$0.00</span>
+                <span class="stat-name">Claimable Total</span>
+              </div>
+              <div class="ref-stat-box ftd-box">
+                <span class="stat-num" id="refFtdEarnings">$0.00</span>
+                <span class="stat-name">5% 1st Deposit Bonus</span>
+              </div>
+              <div class="ref-stat-box">
+                <span class="stat-num" id="refWagerEarnings">$0.00</span>
+                <span class="stat-name">Flight Rebates</span>
+              </div>
+            </div>
+
+            <!-- Claim Button -->
+            <div class="ref-claim-section">
+              <button class="btn-claim-earnings" id="btnClaimReferral">
+                <span>⚡ Transfer Earnings to Game Wallet</span>
               </button>
+              <div class="claim-hint">Min transfer threshold: $1.00 USD • Available immediately for flight bets</div>
             </div>
-            <div class="ref-social-share">
-              <button class="btn-share-social whatsapp" id="btnShareWhatsApp">
-                <span>📱 WhatsApp</span>
+
+            <!-- Recent Activity -->
+            <div class="ref-history-wrap">
+              <div class="ref-history-header">Recent Referral Rebates</div>
+              <div class="ref-history-list" id="refHistoryList">
+                <div class="empty-ref-history">No referral commissions recorded yet. Start sharing your link!</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: MY PILOTS SQUADRON -->
+          <div class="ref-tab-pane" id="tabPanePilots" style="display: none;">
+            <div class="ref-network-header">
+              Pilots registered with your referral code, their total deposits, and commissions credited to your account.
+            </div>
+
+            <div class="ref-pilots-list" id="refPilotsList">
+              <div class="ref-pilots-loading">Loading your squadron pilots...</div>
+            </div>
+
+            <div class="ref-pagination-wrap" id="refPaginationWrap" style="display: none;">
+              <button class="btn-load-more-pilots" id="btnLoadMorePilots">
+                <span>Load More Pilots</span>
               </button>
-              <button class="btn-share-social telegram" id="btnShareTelegram">
-                <span>✈️ Telegram</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Metrics Grid (4-box layout) -->
-          <div class="ref-stats-grid">
-            <div class="ref-stat-box">
-              <span class="stat-num" id="refInvitedCount">0</span>
-              <span class="stat-name">Invited Pilots</span>
-            </div>
-            <div class="ref-stat-box highlight">
-              <span class="stat-num" id="refClaimableBalance">$0.00</span>
-              <span class="stat-name">Claimable Total</span>
-            </div>
-            <div class="ref-stat-box ftd-box">
-              <span class="stat-num" id="refFtdEarnings">$0.00</span>
-              <span class="stat-name">5% 1st Deposit Bonus</span>
-            </div>
-            <div class="ref-stat-box">
-              <span class="stat-num" id="refWagerEarnings">$0.00</span>
-              <span class="stat-name">Flight Rebates</span>
-            </div>
-          </div>
-
-          <!-- Claim Button -->
-          <div class="ref-claim-section">
-            <button class="btn-claim-earnings" id="btnClaimReferral">
-              <span>⚡ Transfer Earnings to Game Wallet</span>
-            </button>
-            <div class="claim-hint">Min transfer threshold: $1.00 USD • Available immediately for flight bets</div>
-          </div>
-
-          <!-- Recent Activity -->
-          <div class="ref-history-wrap">
-            <div class="ref-history-header">Recent Referral Rebates</div>
-            <div class="ref-history-list" id="refHistoryList">
-              <div class="empty-ref-history">No referral commissions recorded yet. Start sharing your link!</div>
             </div>
           </div>
         </div>
@@ -121,6 +154,29 @@ export class ReferralModal {
     this.modalEl.querySelector('#btnCloseReferralModal').addEventListener('click', () => this.hide());
     this.modalEl.addEventListener('click', (e) => {
       if (e.target === this.modalEl) this.hide();
+    });
+
+    // Tab Switching
+    const tabBtnOverview = this.modalEl.querySelector('#tabBtnOverview');
+    const tabBtnPilots = this.modalEl.querySelector('#tabBtnPilots');
+    const paneOverview = this.modalEl.querySelector('#tabPaneOverview');
+    const panePilots = this.modalEl.querySelector('#tabPanePilots');
+
+    tabBtnOverview.addEventListener('click', () => {
+      this.currentTab = 'overview';
+      tabBtnOverview.classList.add('active');
+      tabBtnPilots.classList.remove('active');
+      paneOverview.style.display = 'block';
+      panePilots.style.display = 'none';
+    });
+
+    tabBtnPilots.addEventListener('click', async () => {
+      this.currentTab = 'pilots';
+      tabBtnPilots.classList.add('active');
+      tabBtnOverview.classList.remove('active');
+      panePilots.style.display = 'block';
+      paneOverview.style.display = 'none';
+      await this.loadNetwork();
     });
 
     // Copy referral link
@@ -173,6 +229,9 @@ export class ReferralModal {
             origin: { y: 0.6 },
           });
           await this.loadStats();
+          if (this.currentTab === 'pilots') {
+            await this.loadNetwork();
+          }
         } else {
           notificationManager.error('Claim Failed', res.message || 'Could not transfer earnings.');
         }
@@ -219,6 +278,80 @@ export class ReferralModal {
     }
   }
 
+  async loadNetwork(page = 1) {
+    const listEl = this.modalEl.querySelector('#refPilotsList');
+    try {
+      listEl.innerHTML = `<div class="ref-pilots-loading">Loading your squadron pilots...</div>`;
+      const res = await apiClient.getReferralNetwork(page, 50);
+
+      if (!res.success) {
+        listEl.innerHTML = `<div class="empty-ref-network">Failed to load pilot network. Please try again.</div>`;
+        return;
+      }
+
+      this.network = res;
+      const pilots = res.pilots || [];
+      const total = res.total || 0;
+
+      // Update badge count
+      const badgeCountEl = this.modalEl.querySelector('#refPilotsTabCount');
+      if (badgeCountEl) badgeCountEl.textContent = total;
+
+      if (pilots.length === 0) {
+        listEl.innerHTML = `
+          <div class="empty-ref-network">
+            <span style="font-size: 28px; display: block; margin-bottom: 8px;">🛩️</span>
+            <strong>No pilots in your squadron yet!</strong>
+            <p style="margin: 6px 0 0 0; color: #64748b;">Share your unique referral link to recruit pilots and start earning 5% on their 1st deposit plus flight rebates!</p>
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = pilots
+        .map((pilot) => {
+          const dateStr = new Date(pilot.joinedAt).toLocaleDateString([], {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          });
+          const hasDeposit = pilot.totalDeposited > 0;
+          const hasEarnings = pilot.totalEarned > 0;
+
+          return `
+            <div class="ref-pilot-card">
+              <div class="pilot-card-top">
+                <div class="pilot-info-left">
+                  <span class="pilot-avatar-icon">${hasDeposit ? '👑' : '🧑‍✈️'}</span>
+                  <div>
+                    <div class="pilot-name">${pilot.maskedUsername}</div>
+                    <div class="pilot-joined">Joined ${dateStr}</div>
+                  </div>
+                </div>
+                <div class="pilot-badges-right">
+                  <span class="pilot-badge-dep ${hasDeposit ? 'deposited' : ''}">
+                    💰 Total Dep: $${Number(pilot.totalDeposited).toFixed(2)}
+                  </span>
+                  <span class="pilot-badge-earn ${hasEarnings ? 'has-earnings' : ''}">
+                    🎁 Earned: +$${Number(pilot.totalEarned).toFixed(4)} USD
+                  </span>
+                </div>
+              </div>
+              <div class="pilot-breakdown-sub">
+                <span>5% FTD: <strong>+$${Number(pilot.ftdEarned).toFixed(2)}</strong></span>
+                <span class="breakdown-dot">•</span>
+                <span>Flight Turnover: <strong>+$${Number(pilot.wagerEarned).toFixed(4)}</strong></span>
+              </div>
+            </div>
+          `;
+        })
+        .join('');
+    } catch (err) {
+      console.error('Failed to load referral network', err);
+      listEl.innerHTML = `<div class="empty-ref-network">Server error loading pilot network.</div>`;
+    }
+  }
+
   render() {
     if (!this.stats) return;
 
@@ -233,7 +366,11 @@ export class ReferralModal {
     this.modalEl.querySelector('#refTierRate').textContent = `${ratePercent}% Flight Turnover`;
 
     // Metrics
-    this.modalEl.querySelector('#refInvitedCount').textContent = this.stats.referredCount || 0;
+    const count = this.stats.referredCount || 0;
+    this.modalEl.querySelector('#refInvitedCount').textContent = count;
+    const badgeCountEl = this.modalEl.querySelector('#refPilotsTabCount');
+    if (badgeCountEl) badgeCountEl.textContent = count;
+
     this.modalEl.querySelector('#refClaimableBalance').textContent = `$${Number(this.stats.referralBalance || 0).toFixed(2)}`;
     this.modalEl.querySelector('#refFtdEarnings').textContent = `$${Number(this.stats.ftdEarnings || 0).toFixed(2)}`;
     this.modalEl.querySelector('#refWagerEarnings').textContent = `$${Number(this.stats.wagerEarnings || 0).toFixed(2)}`;
