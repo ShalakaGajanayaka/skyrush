@@ -330,7 +330,7 @@ export default function DashboardPage() {
               <span>Real-Time Operator Verification</span>
             </div>
             <p className="text-xs text-gray-300 leading-relaxed">
-              When a player sends an iPay QR or UPay transfer and submits the reference slip, review it here.
+              When a player sends a Binance Pay USDT transfer and submits the reference slip, review it here.
               Clicking <b className="text-emerald-400">Approve</b> pushes the balance directly to the player&apos;s
               open game screen within milliseconds via Socket.IO!
             </p>

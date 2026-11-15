@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { DepositRequest } from '@/lib/types';
-import { Check, X, Copy, QrCode, Phone, Building2, Clock, CheckCircle2, Coins, ExternalLink } from 'lucide-react';
+import { Check, X, Copy, Building2, Clock, CheckCircle2, Coins, ExternalLink } from 'lucide-react';
 import { approveDeposit, rejectDeposit } from '@/lib/api';
 
 interface PendingDepositsTableProps {
@@ -69,22 +69,6 @@ export default function PendingDepositsTable({
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/12 text-amber-400 border-none">
           <Coins className="w-3 h-3 text-amber-400" />
           <span>Binance / USDT</span>
-        </span>
-      );
-    }
-    if (m.includes('ipay')) {
-      return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/12 text-emerald-400 border-none">
-          <QrCode className="w-3 h-3" />
-          <span>iPay LK</span>
-        </span>
-      );
-    }
-    if (m.includes('upay')) {
-      return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-500/12 text-purple-400 border-none">
-          <Phone className="w-3 h-3" />
-          <span>UPay LK</span>
         </span>
       );
     }

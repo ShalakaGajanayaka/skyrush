@@ -903,15 +903,10 @@ export class AdminController {
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
-    .pill-ipay {
-      background: rgba(16, 185, 129, 0.15);
-      color: #34d399;
-      border: 1px solid rgba(16, 185, 129, 0.3);
-    }
-    .pill-upay {
-      background: rgba(139, 92, 246, 0.15);
-      color: #a78bfa;
-      border: 1px solid rgba(139, 92, 246, 0.3);
+    .pill-binance {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
     }
     .pill-bank {
       background: rgba(59, 130, 246, 0.15);
@@ -1250,8 +1245,7 @@ export class AdminController {
     function formatMethod(method) {
       if (!method) return '<span class="pill pill-manual">MANUAL</span>';
       const m = method.toLowerCase();
-      if (m.includes('ipay')) return '<span class="pill pill-ipay">iPay LK</span>';
-      if (m.includes('upay')) return '<span class="pill pill-upay">UPay LK</span>';
+      if (m.includes('binance') || m.includes('usdt')) return '<span class="pill pill-binance">Binance Pay</span>';
       if (m.includes('bank')) return '<span class="pill pill-bank">Bank CDM</span>';
       return '<span class="pill pill-manual">' + method.toUpperCase() + '</span>';
     }

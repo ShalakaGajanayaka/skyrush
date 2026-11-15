@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CreditCard, QrCode, Phone, Building2, Copy, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { CreditCard, Building2, Copy, ShieldCheck, Coins } from 'lucide-react';
 import { fetchChannels } from '@/lib/api';
 import { PaymentChannel } from '@/lib/types';
 
@@ -24,14 +24,12 @@ export default function ChannelsPage() {
   };
 
   const getChannelIcon = (type: string) => {
-    if (type.includes('ipay')) return <QrCode className="w-6 h-6 text-emerald-400" />;
-    if (type.includes('upay')) return <Phone className="w-6 h-6 text-purple-400" />;
+    if (type.includes('binance') || type.includes('usdt')) return <Coins className="w-6 h-6 text-amber-400" />;
     return <Building2 className="w-6 h-6 text-blue-400" />;
   };
 
   const getBorderColor = (type: string) => {
-    if (type.includes('ipay')) return 'border-emerald-500/30 hover:border-emerald-500/50';
-    if (type.includes('upay')) return 'border-purple-500/30 hover:border-purple-500/50';
+    if (type.includes('binance') || type.includes('usdt')) return 'border-amber-500/30 hover:border-amber-500/50';
     return 'border-blue-500/30 hover:border-blue-500/50';
   };
 

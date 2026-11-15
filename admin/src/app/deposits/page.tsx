@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { History, Search, RefreshCw, Filter, QrCode, Phone, Building2, Check, X, Clock, Coins } from 'lucide-react';
+import { History, Search, RefreshCw, Filter, Building2, Check, X, Clock, Coins } from 'lucide-react';
 import { fetchDeposits } from '@/lib/api';
 import { DepositRequest } from '@/lib/types';
 
@@ -77,12 +77,6 @@ export default function DepositHistoryPage() {
           <span>Binance / USDT</span>
         </span>
       );
-    }
-    if (m.includes('ipay')) {
-      return <span className="text-emerald-400 font-semibold flex items-center gap-1"><QrCode className="w-3 h-3" /> iPay LK</span>;
-    }
-    if (m.includes('upay')) {
-      return <span className="text-purple-400 font-semibold flex items-center gap-1"><Phone className="w-3 h-3" /> UPay LK</span>;
     }
     if (m.includes('bank')) {
       return <span className="text-blue-400 font-semibold flex items-center gap-1"><Building2 className="w-3 h-3" /> Bank Transfer</span>;

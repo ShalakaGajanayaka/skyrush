@@ -38,7 +38,7 @@ export class WithdrawalRequest {
   currency: string;
 
   @Column()
-  method: string; // 'bank_transfer' | 'ipay' | 'upay'
+  method: string; // 'bank_transfer' | 'binance_usdt'
 
   @Column('text')
   payoutDetails: string; // JSON string with bank name, acc no, branch, mobile, holder name

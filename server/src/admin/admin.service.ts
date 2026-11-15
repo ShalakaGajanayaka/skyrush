@@ -87,25 +87,14 @@ export class AdminService implements OnModuleInit {
   getPaymentChannels(): PaymentChannel[] {
     return [
       {
-        id: 'ipay',
-        name: 'iPay (Sri Lanka)',
-        type: 'ipay',
-        badge: 'Instant QR / App',
-        accountNumber: '0729642306',
+        id: 'binance_usdt',
+        name: 'Binance Pay (USDT)',
+        type: 'binance_usdt',
+        badge: 'Instant QR / Pay ID',
+        accountNumber: '548934240',
         accountName: 'SkyRush Official',
-        instructions: 'Open your iPay app, choose Pay Merchant / Send Money, enter Mobile / Account 0729642306, include your Gamer Tag as remark, and submit the iPay Reference Number below.',
-        iconName: 'qr_code_scanner',
-        isEnabled: true,
-      },
-      {
-        id: 'upay',
-        name: 'UPay (Sri Lanka)',
-        type: 'upay',
-        badge: 'Mobile Transfer',
-        accountNumber: '0729642306',
-        accountName: 'SkyRush Official',
-        instructions: 'Open your UPay app, send money to mobile number 0729642306 with your Gamer Tag in description, and copy the transaction reference number below.',
-        iconName: 'phone_android',
+        instructions: 'Open your Binance App, go to Pay, send USDT to Pay ID 548934240 or scan the QR code. Enter your TxID/Order ID as reference below.',
+        iconName: 'currency_bitcoin',
         isEnabled: true,
       },
       {
@@ -115,7 +104,7 @@ export class AdminService implements OnModuleInit {
         badge: 'Disabled',
         accountNumber: 'Disabled',
         accountName: 'Commercial Bank',
-        instructions: 'Commercial Bank deposits are temporarily disabled. Please use iPay or UPay.',
+        instructions: 'Commercial Bank deposits are temporarily disabled. Please use Binance USDT.',
         iconName: 'account_balance',
         isEnabled: false,
       },
@@ -143,14 +132,14 @@ export class AdminService implements OnModuleInit {
 
     let cleanPaymentMethod = (paymentMethod || '').trim().toLowerCase();
     if (cleanPaymentMethod === 'bank_transfer') {
-      throw new BadRequestException('Commercial Bank deposits are temporarily disabled. Please use Binance, iPay, or UPay.');
+      throw new BadRequestException('Commercial Bank deposits are temporarily disabled. Please use Binance USDT.');
     }
     if (cleanPaymentMethod === 'binance' || cleanPaymentMethod === 'binance_pay' || cleanPaymentMethod === 'usdt') {
       cleanPaymentMethod = 'binance_usdt';
     }
-    const ALLOWED_DEPOSIT_METHODS = ['binance_usdt', 'binance_pay', 'binance', 'usdt', 'ipay', 'upay'];
+    const ALLOWED_DEPOSIT_METHODS = ['binance_usdt', 'binance_pay', 'binance', 'usdt'];
     if (!cleanPaymentMethod || !ALLOWED_DEPOSIT_METHODS.includes(cleanPaymentMethod)) {
-      throw new BadRequestException(`Unsupported payment method. Allowed: ${ALLOWED_DEPOSIT_METHODS.join(', ')}`);
+      throw new BadRequestException('Unsupported payment method. Allowed: binance_usdt');
     }
 
     const cleanAmount = Number(amount);
@@ -930,13 +919,13 @@ export class AdminService implements OnModuleInit {
     payoutDetails: any,
     saveDetails?: boolean,
   ): Promise<WithdrawalRequest> {
-    const ALLOWED_WITHDRAWAL_METHODS = ['binance_usdt', 'binance', 'ipay', 'upay', 'bank_transfer'];
+    const ALLOWED_WITHDRAWAL_METHODS = ['binance_usdt', 'binance', 'bank_transfer'];
     let cleanMethod = (method || '').trim().toLowerCase();
     if (cleanMethod === 'binance') {
       cleanMethod = 'binance_usdt';
     }
     if (!cleanMethod || !ALLOWED_WITHDRAWAL_METHODS.includes(cleanMethod)) {
-      throw new BadRequestException(`Unsupported withdrawal method. Allowed: binance_usdt, ipay, upay, bank_transfer`);
+      throw new BadRequestException(`Unsupported withdrawal method. Allowed: binance_usdt, bank_transfer`);
     }
 
     if (['__proto__', 'constructor', 'prototype'].includes(cleanMethod)) {

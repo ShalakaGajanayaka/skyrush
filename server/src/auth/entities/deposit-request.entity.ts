@@ -30,7 +30,7 @@ export class DepositRequest {
   currency: string;
 
   @Column()
-  paymentMethod: string; // 'ipay', 'upay', 'bank_transfer'
+  paymentMethod: string; // 'binance_usdt', 'bank_transfer'
 
   @Index({ unique: true })
   @Column({ unique: true })

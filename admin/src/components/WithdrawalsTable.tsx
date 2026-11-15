@@ -169,12 +169,12 @@ export default function WithdrawalsTable({
       );
     }
 
-    // iPay / UPay / Wallet
+    // Generic Wallet / Other Payout
     return (
       <div className="space-y-1 text-xs">
         <div className="flex items-center gap-1.5 text-purple-300">
           <Smartphone className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-          <span className="font-semibold">{method.toUpperCase()} Mobile Wallet</span>
+          <span className="font-semibold">{method.toUpperCase()} Payout</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="font-mono text-purple-200 font-bold bg-purple-500/10 px-2 py-0.5 rounded-md border-none">
