@@ -1,8 +1,28 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Users, Search, RefreshCw, PlusCircle, Trophy, Gamepad2, Coins, Sparkles, Video, Zap, RotateCcw, History } from 'lucide-react';
-import { fetchUsers } from '@/lib/api';
+import {
+  Users,
+  Search,
+  RefreshCw,
+  PlusCircle,
+  Trophy,
+  Gamepad2,
+  Coins,
+  Sparkles,
+  Video,
+  Zap,
+  RotateCcw,
+  History,
+  Ban,
+  Unlock,
+  ShieldAlert,
+  ShieldCheck,
+  AlertTriangle,
+  X,
+  Check,
+} from 'lucide-react';
+import { fetchUsers, freezePlayer, unfreezePlayer } from '@/lib/api';
 import { User } from '@/lib/types';
 import ManualCreditModal from '@/components/ManualCreditModal';
 import MarketingModal from '@/components/MarketingModal';
@@ -22,6 +42,59 @@ export default function PlayersPage() {
   const [historyUser, setHistoryUser] = useState<User | null>(null);
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Ban & Unban Management State
+  const [banUser, setBanUser] = useState<User | null>(null);
+  const [banReasonPreset, setBanReasonPreset] = useState<string>('Referral Bonus Exploitation / Multi-Accounting');
+  const [banCustomReason, setBanCustomReason] = useState<string>('');
+  const [isSubmittingBan, setIsSubmittingBan] = useState<boolean>(false);
+
+  const [unbanUser, setUnbanUser] = useState<User | null>(null);
+  const [isSubmittingUnban, setIsSubmittingUnban] = useState<boolean>(false);
+
+  const handleOpenBan = (u: User) => {
+    setBanUser(u);
+    setBanReasonPreset('Referral Bonus Exploitation / Multi-Accounting');
+    setBanCustomReason('');
+  };
+
+  const handleConfirmBan = async () => {
+    if (!banUser) return;
+    const finalReason = banCustomReason.trim()
+      ? `${banReasonPreset} - ${banCustomReason.trim()}`
+      : banReasonPreset;
+
+    setIsSubmittingBan(true);
+    try {
+      await freezePlayer(banUser.id, finalReason);
+      showToast(`⛔ Player ${banUser.username} has been BANNED and live sessions disconnected!`);
+      setBanUser(null);
+      loadData(searchTerm);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to ban player');
+    } finally {
+      setIsSubmittingBan(false);
+    }
+  };
+
+  const handleOpenUnban = (u: User) => {
+    setUnbanUser(u);
+  };
+
+  const handleConfirmUnban = async () => {
+    if (!unbanUser) return;
+    setIsSubmittingUnban(true);
+    try {
+      await unfreezePlayer(unbanUser.id);
+      showToast(`✅ Player ${unbanUser.username} has been UNBANNED and access restored!`);
+      setUnbanUser(null);
+      loadData(searchTerm);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to unban player');
+    } finally {
+      setIsSubmittingUnban(false);
+    }
+  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -144,21 +217,36 @@ export default function PlayersPage() {
                     {u.email || u.phoneNumber || '-'}
                   </td>
                   <td className="py-3.5 px-4">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {u.isMarketing ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-extrabold text-[10px] bg-purple-500/15 text-purple-300 border-none">
-                          <Video className="w-3 h-3 text-purple-400" />
-                          <span>MARKETING</span>
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded-full font-medium text-[10px] bg-white/[0.05] text-gray-400 border-none">
-                          Player
-                        </span>
-                      )}
-                      {u.isMarketing && u.isMarketingAutoWin && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-extrabold text-[9px] bg-amber-500/15 text-amber-300 border-none">
-                          <Zap className="w-2.5 h-2.5 fill-amber-300" />
-                          <span>AUTO-WIN</span>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {u.isFrozen ? (
+                          <span
+                            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-black text-[10px] bg-rose-500/15 text-rose-400 border border-rose-500/30"
+                            title={u.freezeReason || 'Suspended by Administrator'}
+                          >
+                            <Ban className="w-3 h-3 text-rose-400" />
+                            <span>BANNED</span>
+                          </span>
+                        ) : u.isMarketing ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-extrabold text-[10px] bg-purple-500/15 text-purple-300 border-none">
+                            <Video className="w-3 h-3 text-purple-400" />
+                            <span>MARKETING</span>
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full font-medium text-[10px] bg-white/[0.05] text-gray-400 border-none">
+                            Player
+                          </span>
+                        )}
+                        {u.isMarketing && u.isMarketingAutoWin && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-extrabold text-[9px] bg-amber-500/15 text-amber-300 border-none">
+                            <Zap className="w-2.5 h-2.5 fill-amber-300" />
+                            <span>AUTO-WIN</span>
+                          </span>
+                        )}
+                      </div>
+                      {u.isFrozen && u.freezeReason && (
+                        <span className="text-[10px] text-gray-400 truncate max-w-[170px]" title={u.freezeReason}>
+                          {u.freezeReason}
                         </span>
                       )}
                     </div>
@@ -186,7 +274,28 @@ export default function PlayersPage() {
                     </div>
                   </td>
                   <td className="py-3.5 px-4 text-right">
-                    <div className="inline-flex items-center gap-2">
+                    <div className="inline-flex items-center gap-1.5">
+                      {/* Ban / Unban Toggle Button */}
+                      {u.isFrozen ? (
+                        <button
+                          onClick={() => handleOpenUnban(u)}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 font-bold text-xs border border-emerald-500/25 transition-all active:scale-95"
+                          title="Unban Player & Restore Account Access"
+                        >
+                          <Unlock className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Unban</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleOpenBan(u)}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 font-bold text-xs border border-rose-500/25 transition-all active:scale-95"
+                          title="Ban Player & Disconnect Live Sessions"
+                        >
+                          <Ban className="w-3.5 h-3.5 text-rose-400" />
+                          <span>Ban</span>
+                        </button>
+                      )}
+
                       <button
                         onClick={() => handleOpenHistory(u)}
                         className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 font-bold text-xs border-none transition-all active:scale-95"
@@ -265,6 +374,141 @@ export default function PlayersPage() {
           loadData(searchTerm);
         }}
       />
+
+      {/* 1. Ban Player Account Modal */}
+      {banUser && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#111726] border border-rose-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                  <ShieldAlert className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">Ban Player Account</h3>
+                  <p className="text-xs text-rose-400 font-bold">Target: {banUser.username}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setBanUser(null)}
+                className="text-gray-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-gray-300 space-y-1">
+              <div className="font-bold text-rose-300 flex items-center gap-1">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                <span>Security Enforcement Action</span>
+              </div>
+              <p className="text-[11px] leading-relaxed text-gray-400">
+                Banning this player will immediately terminate any active game flights, disconnect all sessions, and lock their wallet balance of{' '}
+                <strong className="text-white">${Number(banUser.balance || 0).toFixed(2)} USD</strong>.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-gray-400 block mb-1.5">
+                  Reason for Ban:
+                </label>
+                <select
+                  value={banReasonPreset}
+                  onChange={(e) => setBanReasonPreset(e.target.value)}
+                  className="w-full bg-[#182234] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500/50"
+                >
+                  <option value="Referral Bonus Exploitation / Multi-Accounting">Referral Bonus Exploitation / Multi-Accounting</option>
+                  <option value="Invalid / Replayed Deposit Reference Slip">Invalid / Replayed Deposit Reference Slip</option>
+                  <option value="Automated Script / Bot Arbitrage Usage">Automated Script / Bot Arbitrage Usage</option>
+                  <option value="Suspicious Chargeback / Payment Irregularity">Suspicious Chargeback / Payment Irregularity</option>
+                  <option value="Violation of Platform Fair Play & Terms">Violation of Platform Fair Play & Terms</option>
+                  <option value="Manual Administrative Security Suspension">Manual Administrative Security Suspension</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-gray-400 block mb-1.5">
+                  Additional Operator Remarks (Optional):
+                </label>
+                <textarea
+                  value={banCustomReason}
+                  onChange={(e) => setBanCustomReason(e.target.value)}
+                  placeholder="e.g. Matched duplicate referral IP with 5 accounts..."
+                  rows={2}
+                  className="w-full bg-[#182234] border border-white/10 rounded-xl p-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-rose-500/50"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/5">
+              <button
+                onClick={() => setBanUser(null)}
+                className="px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-gray-300 text-xs font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmBan}
+                disabled={isSubmittingBan}
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-extrabold text-xs shadow-lg shadow-rose-600/30 disabled:opacity-50 flex items-center gap-1.5"
+              >
+                <Ban className="w-3.5 h-3.5" />
+                <span>{isSubmittingBan ? 'Banning...' : 'Confirm & Ban Account'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Unban Player Account Modal */}
+      {unbanUser && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#111726] border border-emerald-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">Unban Player Account</h3>
+                  <p className="text-xs text-emerald-400 font-bold">Target: {unbanUser.username}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setUnbanUser(null)}
+                className="text-gray-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-gray-300">
+              <p className="text-xs leading-relaxed">
+                Are you sure you want to unban <strong className="text-white">{unbanUser.username}</strong>?
+                This will lift all security blocks, unfreeze their wallet, and allow them to log in and play normally.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/5">
+              <button
+                onClick={() => setUnbanUser(null)}
+                className="px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-gray-300 text-xs font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmUnban}
+                disabled={isSubmittingUnban}
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-lg shadow-emerald-600/30 disabled:opacity-50 flex items-center gap-1.5"
+              >
+                <Unlock className="w-3.5 h-3.5" />
+                <span>{isSubmittingUnban ? 'Restoring...' : 'Confirm & Unban Player'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl text-xs font-bold text-white bg-emerald-600/90 border border-emerald-500/40 shadow-2xl backdrop-blur-xl animate-slide-up">

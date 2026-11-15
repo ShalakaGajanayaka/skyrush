@@ -49,6 +49,7 @@ export interface User {
   gamesPlayed: number;
   totalWon: number | string;
   isFrozen?: boolean;
+  freezeReason?: string;
   isMarketing?: boolean;
   isMarketingAutoWin?: boolean;
   createdAt: string;

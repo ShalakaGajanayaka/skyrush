@@ -225,6 +225,30 @@ export async function adjustUserBalance(
   return data;
 }
 
+export async function freezePlayer(
+  userId: string,
+  reason: string,
+): Promise<{ success: boolean; user: User; message?: string }> {
+  const res = await authFetch(`${API_BASE}/admin/api/users/${encodeURIComponent(userId)}/freeze`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Failed to ban player account');
+  return data;
+}
+
+export async function unfreezePlayer(
+  userId: string,
+): Promise<{ success: boolean; user: User; message?: string }> {
+  const res = await authFetch(`${API_BASE}/admin/api/users/${encodeURIComponent(userId)}/unfreeze`, {
+    method: 'POST',
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Failed to unban player account');
+  return data;
+}
+
 export interface MarketingRadarData {
   room: string;
   roundNumber: number;
