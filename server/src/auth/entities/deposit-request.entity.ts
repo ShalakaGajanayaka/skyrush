@@ -49,6 +49,15 @@ export class DepositRequest {
   @Column({ nullable: true, type: 'timestamp' })
   approvedAt?: Date;
 
+  @Column({ default: false })
+  isFirstDeposit: boolean;
+
+  @Column({ default: false })
+  referralCommissionPaid: boolean;
+
+  @Column('decimal', { precision: 12, scale: 4, default: 0.0 })
+  referralCommissionAmount: number;
+
   @CreateDateColumn()
   createdAt: Date;
 

@@ -24,7 +24,10 @@ export class ReferralLedger {
   earnedAmount: number;
 
   @Column({ default: 'WAGER_COMMISSION', length: 30 })
-  type: string; // 'WAGER_COMMISSION', 'FTD_BONUS'
+  type: string; // 'WAGER_COMMISSION', 'FTD_COMMISSION'
+
+  @Column({ nullable: true })
+  depositId?: string;
 
   @CreateDateColumn()
   createdAt: Date;

@@ -14,6 +14,9 @@ export interface DepositRequest {
   adminNote?: string;
   approvedBy?: string;
   approvedAt?: string;
+  isFirstDeposit?: boolean;
+  referralCommissionPaid?: boolean;
+  referralCommissionAmount?: number;
   createdAt: string;
   updatedAt: string;
 }

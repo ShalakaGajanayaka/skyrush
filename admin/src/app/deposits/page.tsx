@@ -175,8 +175,17 @@ export default function DepositHistoryPage() {
                     <div className="font-bold text-white">{d.username}</div>
                     <div className="text-[10px] text-gray-400">{d.email || '-'}</div>
                   </td>
-                  <td className="py-3 px-4 font-extrabold text-white text-sm">
-                    {d.currency} {Number(d.amount).toFixed(2)}
+                  <td className="py-3 px-4">
+                    <div className="font-extrabold text-white text-sm">
+                      {d.currency} {Number(d.amount).toFixed(2)}
+                    </div>
+                    {d.referralCommissionPaid && (
+                      <div className="mt-1">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                          🎁 5% Ref Paid (${Number(d.referralCommissionAmount || 0).toFixed(2)})
+                        </span>
+                      </div>
+                    )}
                   </td>
                   <td className="py-3 px-4">{getMethodBadge(d.paymentMethod)}</td>
                   <td className="py-3 px-4">

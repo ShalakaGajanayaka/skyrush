@@ -9,6 +9,7 @@ import { User } from './entities/user.entity';
 import { Transaction } from './entities/transaction.entity';
 import { BetHistory } from './entities/bet-history.entity';
 import { ReferralLedger } from './entities/referral-ledger.entity';
+import { DepositRequest, DepositStatus } from './entities/deposit-request.entity';
 import { GameService, GameStatus, GameRoomType } from '../game/game.service';
 
 export const COUNTRY_TO_CURRENCY: Record<string, string> = {
@@ -130,6 +131,8 @@ export class AuthService implements OnModuleInit {
     private readonly betHistoryRepository: Repository<BetHistory>,
     @InjectRepository(ReferralLedger)
     private readonly referralLedgerRepository: Repository<ReferralLedger>,
+    @InjectRepository(DepositRequest)
+    private readonly depositRepository: Repository<DepositRequest>,
     private readonly redisService: RedisService,
     @Inject(forwardRef(() => GameService))
     private readonly gameService: GameService,
@@ -2101,6 +2104,111 @@ export class AuthService implements OnModuleInit {
     }
   }
 
+  async processDepositReferralCommission(
+    userId: string,
+    depositUSD: number,
+    depositId: string,
+  ): Promise<{ rewarded: boolean; amount: number; referrerUsername?: string }> {
+    if (!userId || depositUSD <= 0) {
+      return { rewarded: false, amount: 0 };
+    }
+
+    try {
+      // 1. Fetch user to check if referred
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+        select: { id: true, username: true, referredById: true },
+      });
+
+      if (!user || !user.referredById) {
+        return { rewarded: false, amount: 0 };
+      }
+
+      const referrerId = user.referredById;
+
+      // 2. FTD (First Time Deposit) Check:
+      // Verify if the user has any prior APPROVED deposits (excluding the current one)
+      const previousApprovedCount = await this.depositRepository
+        .createQueryBuilder('d')
+        .where('d.userId = :userId', { userId })
+        .andWhere('d.status = :status', { status: DepositStatus.APPROVED })
+        .andWhere('d.id != :depositId', { depositId })
+        .getCount();
+
+      if (previousApprovedCount > 0) {
+        this.logger.log(`[Referral FTD] User ${user.username} already has prior approved deposits. Skipping FTD bonus.`);
+        return { rewarded: false, amount: 0 };
+      }
+
+      // Check if FTD commission was already paid for this user (defense-in-depth against duplicate execution)
+      const existingFtdCommission = await this.referralLedgerRepository.findOne({
+        where: { referredUserId: userId, type: 'FTD_COMMISSION' },
+      });
+      if (existingFtdCommission) {
+        this.logger.warn(`[Referral FTD] FTD commission already exists for user ${userId}. Skipping.`);
+        return { rewarded: false, amount: 0 };
+      }
+
+      // 3. Fetch referrer
+      const referrer = await this.userRepository.findOne({
+        where: { id: referrerId },
+        select: { id: true, username: true, isFrozen: true, referralBalance: true, totalReferralEarnings: true },
+      });
+
+      if (!referrer || referrer.isFrozen) {
+        this.logger.warn(`[Referral FTD] Referrer ${referrerId} not found or is frozen.`);
+        return { rewarded: false, amount: 0 };
+      }
+
+      // 4. Calculate 5% Commission
+      const FTD_RATE = 0.05; // 5%
+      const earned = parseFloat((depositUSD * FTD_RATE).toFixed(4));
+      if (earned <= 0) return { rewarded: false, amount: 0 };
+
+      // 5. Atomic increment of referrer's balances
+      await this.userRepository.increment({ id: referrerId }, 'referralBalance', earned);
+      await this.userRepository.increment({ id: referrerId }, 'totalReferralEarnings', earned);
+
+      // 6. Record in ReferralLedger
+      await this.referralLedgerRepository.save({
+        referrerId,
+        referredUserId: userId,
+        betAmount: depositUSD,
+        commissionRate: FTD_RATE,
+        earnedAmount: earned,
+        type: 'FTD_COMMISSION',
+        depositId,
+      });
+
+      // 7. Update DepositRequest entity to flag that FTD commission was paid
+      await this.depositRepository.update(
+        { id: depositId },
+        {
+          isFirstDeposit: true,
+          referralCommissionPaid: true,
+          referralCommissionAmount: earned,
+        },
+      );
+
+      // 8. Real-time in-app balance & notification if referrer is connected
+      this.gameService.notifyUserBalance(
+        { id: referrer.id, username: referrer.username },
+        Number(referrer.referralBalance) + earned,
+        `🎁 5% FTD Bonus! Your friend ${user.username} made their first deposit: +$${earned.toFixed(2)} USD`,
+        'USD',
+      );
+
+      this.logger.log(
+        `[Referral FTD] Successfully rewarded 5% FTD bonus ($${earned.toFixed(2)} USD) to ${referrer.username} for friend's deposit ($${depositUSD.toFixed(2)} USD)`,
+      );
+
+      return { rewarded: true, amount: earned, referrerUsername: referrer.username };
+    } catch (err) {
+      this.logger.error(`[Referral FTD] Error processing deposit referral commission for user ${userId}`, err);
+      return { rewarded: false, amount: 0 };
+    }
+  }
+
   async getReferralStats(token: string) {
     let userId: string | null = null;
     try {
@@ -2143,6 +2251,25 @@ export class AuthService implements OnModuleInit {
       await this.userRepository.update({ id: user.id }, { referralTier: currentTier });
     }
 
+    // Split earnings breakdown (FTD vs Wager)
+    const breakdown = await this.referralLedgerRepository
+      .createQueryBuilder('r')
+      .select('r.type', 'type')
+      .addSelect('COALESCE(SUM(r.earnedAmount), 0)', 'total')
+      .where('r.referrerId = :referrerId', { referrerId: user.id })
+      .groupBy('r.type')
+      .getRawMany();
+
+    let ftdEarnings = 0;
+    let wagerEarnings = 0;
+    for (const row of breakdown) {
+      if (row.type === 'FTD_COMMISSION') {
+        ftdEarnings = Math.round(Number(row.total || 0) * 10000) / 10000;
+      } else if (row.type === 'WAGER_COMMISSION') {
+        wagerEarnings = Math.round(Number(row.total || 0) * 10000) / 10000;
+      }
+    }
+
     // Recent 10 earnings
     const recentLedger = await this.referralLedgerRepository.find({
       where: { referrerId: user.id },
@@ -2156,11 +2283,14 @@ export class AuthService implements OnModuleInit {
       commissionRate,
       referralBalance: Math.round(Number(user.referralBalance || 0) * 10000) / 10000,
       totalReferralEarnings: Math.round(Number(user.totalReferralEarnings || 0) * 10000) / 10000,
+      ftdEarnings,
+      wagerEarnings,
       referredCount,
       minClaimAmount: 1.0,
       recentEarnings: recentLedger.map((l) => ({
         id: l.id,
-        betAmount: Number(l.betAmount),
+        type: l.type,
+        amount: Number(l.betAmount),
         earnedAmount: Number(l.earnedAmount),
         commissionRate: Number(l.commissionRate),
         createdAt: l.createdAt,

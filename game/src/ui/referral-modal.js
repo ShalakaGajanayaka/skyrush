@@ -24,20 +24,31 @@ export class ReferralModal {
             <span class="modal-badge-icon">🤝</span>
             <div>
               <h3>Affiliate & Referrals</h3>
-              <p class="modal-subtitle">Invite friends & earn up to 1.0% on every bet they make</p>
+              <p class="modal-subtitle">Earn 5% on friends' 1st deposit + up to 1.0% on every flight!</p>
             </div>
           </div>
           <button class="modal-close" id="btnCloseReferralModal" title="Close">&times;</button>
         </div>
 
         <div class="modal-body referral-modal-body">
+          <!-- 5% FTD Golden Callout Banner -->
+          <div class="ref-bonus-callout">
+            <div class="callout-header">
+              <span class="callout-pill">🔥 5% FTD CASH BONUS</span>
+              <span class="callout-sub">Instant On 1st Deposit</span>
+            </div>
+            <div class="callout-desc">
+              When a pilot registers with your code and makes their <strong>First Deposit</strong>, you immediately receive <strong>5.0% cash</strong> in your affiliate wallet!
+            </div>
+          </div>
+
           <!-- Tier & Status Badge -->
           <div class="referral-tier-banner">
             <div class="tier-info">
               <span class="tier-tag" id="refTierBadge">BRONZE PILOT</span>
-              <span class="tier-rate" id="refTierRate">0.50% Wager Commission</span>
+              <span class="tier-rate" id="refTierRate">0.50% Flight Turnover</span>
             </div>
-            <div class="tier-desc">Share your link and earn continuous passive rewards on every flight!</div>
+            <div class="tier-desc">Continuous lifetime wager rebates on every single flight round played.</div>
           </div>
 
           <!-- Share Link Card -->
@@ -63,7 +74,7 @@ export class ReferralModal {
             </div>
           </div>
 
-          <!-- Metrics Row -->
+          <!-- Metrics Grid (4-box layout) -->
           <div class="ref-stats-grid">
             <div class="ref-stat-box">
               <span class="stat-num" id="refInvitedCount">0</span>
@@ -71,11 +82,15 @@ export class ReferralModal {
             </div>
             <div class="ref-stat-box highlight">
               <span class="stat-num" id="refClaimableBalance">$0.00</span>
-              <span class="stat-name">Claimable Earnings</span>
+              <span class="stat-name">Claimable Total</span>
+            </div>
+            <div class="ref-stat-box ftd-box">
+              <span class="stat-num" id="refFtdEarnings">$0.00</span>
+              <span class="stat-name">5% 1st Deposit Bonus</span>
             </div>
             <div class="ref-stat-box">
-              <span class="stat-num" id="refTotalEarnings">$0.00</span>
-              <span class="stat-name">Lifetime Total</span>
+              <span class="stat-num" id="refWagerEarnings">$0.00</span>
+              <span class="stat-name">Flight Rebates</span>
             </div>
           </div>
 
@@ -84,7 +99,7 @@ export class ReferralModal {
             <button class="btn-claim-earnings" id="btnClaimReferral">
               <span>⚡ Transfer Earnings to Game Wallet</span>
             </button>
-            <div class="claim-hint">Min transfer threshold: $1.00 USD</div>
+            <div class="claim-hint">Min transfer threshold: $1.00 USD • Available immediately for flight bets</div>
           </div>
 
           <!-- Recent Activity -->
@@ -115,7 +130,7 @@ export class ReferralModal {
       try {
         await navigator.clipboard.writeText(input.value);
         copyBtn.querySelector('#btnCopyText').textContent = 'Copied!';
-        notificationManager.success('Referral Link Copied', 'Share it with your crew to earn commissions!');
+        notificationManager.success('Referral Link Copied', 'Share it with your crew to earn 5% on their 1st deposit!');
         setTimeout(() => {
           copyBtn.querySelector('#btnCopyText').textContent = 'Copy';
         }, 2000);
@@ -153,8 +168,8 @@ export class ReferralModal {
             this.setBalance(res.newBalance);
           }
           confetti({
-            particleCount: 80,
-            spread: 70,
+            particleCount: 90,
+            spread: 80,
             origin: { y: 0.6 },
           });
           await this.loadStats();
@@ -215,12 +230,13 @@ export class ReferralModal {
     const tier = this.stats.referralTier || 'BRONZE';
     const ratePercent = ((this.stats.commissionRate || 0.005) * 100).toFixed(2);
     this.modalEl.querySelector('#refTierBadge').textContent = `${tier} AFFILIATE`;
-    this.modalEl.querySelector('#refTierRate').textContent = `${ratePercent}% Wager Commission`;
+    this.modalEl.querySelector('#refTierRate').textContent = `${ratePercent}% Flight Turnover`;
 
     // Metrics
     this.modalEl.querySelector('#refInvitedCount').textContent = this.stats.referredCount || 0;
     this.modalEl.querySelector('#refClaimableBalance').textContent = `$${Number(this.stats.referralBalance || 0).toFixed(2)}`;
-    this.modalEl.querySelector('#refTotalEarnings').textContent = `$${Number(this.stats.totalReferralEarnings || 0).toFixed(2)}`;
+    this.modalEl.querySelector('#refFtdEarnings').textContent = `$${Number(this.stats.ftdEarnings || 0).toFixed(2)}`;
+    this.modalEl.querySelector('#refWagerEarnings').textContent = `$${Number(this.stats.wagerEarnings || 0).toFixed(2)}`;
 
     // Claim button disable if under threshold
     const claimBtn = this.modalEl.querySelector('#btnClaimReferral');
@@ -240,10 +256,16 @@ export class ReferralModal {
       listEl.innerHTML = this.stats.recentEarnings
         .map((item) => {
           const date = new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          const isFtd = item.type === 'FTD_COMMISSION';
+          const badgeText = isFtd
+            ? `🎁 5% 1st Deposit ($${Number(item.amount || item.betAmount || 0).toFixed(2)})`
+            : `✈️ Flight Wager ($${Number(item.amount || item.betAmount || 0).toFixed(2)})`;
+          const badgeClass = isFtd ? 'ref-badge-ftd' : 'ref-flight-badge';
+
           return `
-            <div class="ref-history-item">
+            <div class="ref-history-item ${isFtd ? 'highlight-ftd' : ''}">
               <div class="history-item-left">
-                <span class="ref-flight-badge">✈️ Flight Wager ($${Number(item.betAmount).toFixed(2)})</span>
+                <span class="${badgeClass}">${badgeText}</span>
                 <span class="ref-time">${date}</span>
               </div>
               <div class="ref-history-right">
@@ -258,4 +280,3 @@ export class ReferralModal {
     }
   }
 }
-

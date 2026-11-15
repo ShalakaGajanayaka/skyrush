@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenException, ConflictException, UnauthorizedException, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenException, ConflictException, UnauthorizedException, OnModuleInit, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike, MoreThan } from 'typeorm';
 import { User } from '../auth/entities/user.entity';
@@ -9,7 +9,7 @@ import { PoolAuditLog } from '../auth/entities/pool-audit-log.entity';
 import { BetHistory } from '../auth/entities/bet-history.entity';
 import { RedisService } from '../redis/redis.service';
 import { GameService } from '../game/game.service';
-import { PLATFORM_EXCHANGE_RATES } from '../auth/auth.service';
+import { AuthService, PLATFORM_EXCHANGE_RATES } from '../auth/auth.service';
 
 export interface PaymentChannel {
   id: string;
@@ -42,6 +42,8 @@ export class AdminService implements OnModuleInit {
     private readonly betHistoryRepo: Repository<BetHistory>,
     private readonly redisService: RedisService,
     private readonly gameService: GameService,
+    @Inject(forwardRef(() => AuthService))
+    private readonly authService: AuthService,
   ) {}
 
   onModuleInit() {
@@ -545,6 +547,13 @@ export class AdminService implements OnModuleInit {
       );
 
       this.logger.log(`Deposit APPROVED: ${savedDeposit!.id} for ${savedUser!.username} (+${savedDeposit!.currency} ${depositAmount} -> +$${depositUSD} USD). New Balance: $${newBalanceUSD} USD`);
+
+      // Asynchronously process 5% First Time Deposit (FTD) referral commission
+      this.authService
+        .processDepositReferralCommission(savedUser!.id, depositUSD, savedDeposit!.id)
+        .catch((refErr) => {
+          this.logger.error('[Referral FTD] Error rewarding deposit referral commission in background', refErr);
+        });
 
       return {
         success: true,
