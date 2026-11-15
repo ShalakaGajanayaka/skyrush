@@ -2353,12 +2353,12 @@ export class AuthService implements OnModuleInit {
             .where('d.status = :depStatus', { depStatus: DepositStatus.APPROVED })
             .groupBy('d.userId'),
         'dep',
-        'dep.dep_user_id = u.id',
+        'dep.dep_user_id = CAST(u.id AS text)',
       )
       .leftJoin(
         ReferralLedger,
         'l',
-        'l.referredUserId = u.id AND l.referrerId = :refId',
+        'l.referredUserId = CAST(u.id AS text) AND l.referrerId = :refId',
         { refId: userId },
       )
       .addSelect('COALESCE(dep.total_deposited, 0)', 'totalDeposited')
