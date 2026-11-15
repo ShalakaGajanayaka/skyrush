@@ -141,11 +141,14 @@ export class AdminService implements OnModuleInit {
       );
     }
 
-    const cleanPaymentMethod = (paymentMethod || '').trim().toLowerCase();
+    let cleanPaymentMethod = (paymentMethod || '').trim().toLowerCase();
     if (cleanPaymentMethod === 'bank_transfer') {
-      throw new BadRequestException('Commercial Bank deposits are temporarily disabled. Please use iPay or UPay.');
+      throw new BadRequestException('Commercial Bank deposits are temporarily disabled. Please use Binance, iPay, or UPay.');
     }
-    const ALLOWED_DEPOSIT_METHODS = ['binance_pay', 'binance', 'ipay', 'upay'];
+    if (cleanPaymentMethod === 'binance' || cleanPaymentMethod === 'binance_pay' || cleanPaymentMethod === 'usdt') {
+      cleanPaymentMethod = 'binance_usdt';
+    }
+    const ALLOWED_DEPOSIT_METHODS = ['binance_usdt', 'binance_pay', 'binance', 'usdt', 'ipay', 'upay'];
     if (!cleanPaymentMethod || !ALLOWED_DEPOSIT_METHODS.includes(cleanPaymentMethod)) {
       throw new BadRequestException(`Unsupported payment method. Allowed: ${ALLOWED_DEPOSIT_METHODS.join(', ')}`);
     }
@@ -226,7 +229,7 @@ export class AdminService implements OnModuleInit {
         email: email || undefined,
         amount: cleanAmount,
         currency: (currency || 'USD').toUpperCase(),
-        paymentMethod,
+        paymentMethod: cleanPaymentMethod,
         referenceNumber: cleanRef,
         status: DepositStatus.PENDING,
       });
