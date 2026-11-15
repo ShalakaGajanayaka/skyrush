@@ -2373,11 +2373,10 @@ body {
 }
 
 .ref-bonus-callout {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(217, 119, 6, 0.02) 100%);
-  border: 1px solid rgba(245, 158, 11, 0.2);
-  border-left: 3px solid #f59e0b;
-  border-radius: 10px;
-  padding: 11px 14px;
+  background: rgba(245, 158, 11, 0.07);
+  border: none;
+  border-radius: 12px;
+  padding: 12px 14px;
   margin-bottom: 12px;
 }
 
@@ -2389,14 +2388,14 @@ body {
 }
 
 .callout-pill {
-  background: rgba(245, 158, 11, 0.15);
+  background: rgba(245, 158, 11, 0.18);
   color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.25);
+  border: none;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.6px;
-  padding: 2px 7px;
-  border-radius: 5px;
+  padding: 3px 8px;
+  border-radius: 6px;
   display: inline-flex;
   align-items: center;
 }
@@ -2410,19 +2409,19 @@ body {
 .callout-desc {
   font-size: 11.5px;
   line-height: 1.45;
-  color: #cbd5e1;
+  color: #94a3b8;
 }
 
 .callout-desc strong {
-  color: #f8fafc;
+  color: #f1f5f9;
 }
 
 .referral-tier-banner {
-  background: rgba(18, 23, 34, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+  border: none;
+  border-radius: 12px;
   padding: 11px 14px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .tier-info {
@@ -2433,14 +2432,14 @@ body {
 }
 
 .tier-tag {
-  background: rgba(245, 158, 11, 0.15);
+  background: rgba(245, 158, 11, 0.18);
   color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.25);
+  border: none;
   font-size: 10.5px;
   font-weight: 800;
   letter-spacing: 0.8px;
-  padding: 2px 7px;
-  border-radius: 5px;
+  padding: 3px 8px;
+  border-radius: 6px;
 }
 
 .tier-rate {
@@ -2455,11 +2454,11 @@ body {
 }
 
 .ref-link-card {
-  background: rgba(18, 23, 34, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+  border: none;
+  border-radius: 12px;
   padding: 12px 14px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .ref-label {
@@ -2479,8 +2478,8 @@ body {
 
 .ref-input-group input {
   flex: 1;
-  background: #0b0e14;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.35);
+  border: none;
   border-radius: 8px;
   padding: 8px 12px;
   color: #f8fafc;
@@ -2516,10 +2515,10 @@ body {
 .btn-share-social {
   flex: 1;
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: none;
   border-radius: 6px;
   color: #cbd5e1;
-  padding: 6px 10px;
+  padding: 7px 10px;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
@@ -2539,21 +2538,21 @@ body {
 }
 
 .ref-stat-box {
-  background: rgba(18, 23, 34, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.025);
+  border: none;
   border-radius: 10px;
-  padding: 10px 10px;
+  padding: 11px 10px;
   text-align: center;
 }
 
 .ref-stat-box.highlight {
-  background: rgba(16, 185, 129, 0.05);
-  border-color: rgba(16, 185, 129, 0.16);
+  background: rgba(16, 185, 129, 0.07);
+  border: none;
 }
 
 .ref-stat-box.ftd-box {
-  background: rgba(245, 158, 11, 0.05);
-  border-color: rgba(245, 158, 11, 0.16);
+  background: rgba(245, 158, 11, 0.07);
+  border: none;
 }
 
 .ref-stat-box .stat-num {
@@ -2614,8 +2613,8 @@ body {
 }
 
 .ref-history-wrap {
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding-top: 12px;
+  border-top: none;
+  padding-top: 10px;
 }
 
 .ref-history-header {
@@ -2639,17 +2638,17 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(15, 23, 42, 0.4);
-  padding: 6px 10px;
-  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.025);
+  padding: 8px 10px;
+  border-radius: 8px;
   font-size: 11px;
-  border: 1px solid transparent;
+  border: none;
   transition: all 0.15s ease;
 }
 
 .ref-history-item.highlight-ftd {
-  background: rgba(245, 158, 11, 0.08);
-  border: 1px solid rgba(245, 158, 11, 0.25);
+  background: rgba(245, 158, 11, 0.07);
+  border: none;
 }
 
 .history-item-left {
@@ -2688,8 +2687,8 @@ body {
 /* --- Referral Modal Navigation Tabs --- */
 .ref-tabs-nav {
   display: flex;
-  background: rgba(10, 14, 22, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.35);
+  border: none;
   border-radius: 10px;
   padding: 4px;
   gap: 4px;
@@ -2699,7 +2698,7 @@ body {
 .ref-tab-btn {
   flex: 1;
   background: transparent;
-  border: 1px solid transparent;
+  border: none;
   border-radius: 7px;
   padding: 8px 12px;
   color: #94a3b8;
@@ -2720,9 +2719,9 @@ body {
 
 .ref-tab-btn.active {
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: none;
   color: #f8fafc;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  box-shadow: none;
 }
 
 /* --- Tab 2: Pilots Squadron List --- */
@@ -2731,10 +2730,10 @@ body {
   color: #94a3b8;
   margin-bottom: 12px;
   line-height: 1.45;
-  background: rgba(18, 23, 34, 0.5);
-  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.025);
+  padding: 9px 12px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: none;
 }
 
 .ref-pilots-list {
@@ -2754,16 +2753,15 @@ body {
 }
 
 .ref-pilot-card {
-  background: rgba(18, 23, 34, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.025);
+  border: none;
   border-radius: 10px;
   padding: 10px 12px;
   transition: all 0.2s;
 }
 
 .ref-pilot-card:hover {
-  border-color: rgba(255, 255, 255, 0.12);
-  background: rgba(18, 23, 34, 0.85);
+  background: rgba(255, 255, 255, 0.05);
   transform: translateY(-1px);
 }
 
@@ -2811,12 +2809,13 @@ body {
   background: rgba(255, 255, 255, 0.04);
   padding: 2px 7px;
   border-radius: 4px;
+  border: none;
 }
 
 .pilot-badge-dep.deposited {
   color: #38bdf8;
-  background: rgba(56, 189, 248, 0.1);
-  border: 1px solid rgba(56, 189, 248, 0.25);
+  background: rgba(56, 189, 248, 0.12);
+  border: none;
 }
 
 .pilot-badge-earn {
@@ -2855,7 +2854,7 @@ body {
   color: #94a3b8;
   font-size: 12px;
   line-height: 1.5;
-  background: rgba(15, 23, 42, 0.4);
+  background: rgba(255, 255, 255, 0.02);
   border-radius: 12px;
-  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border: none;
 }
