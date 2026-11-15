@@ -144,13 +144,13 @@ export class ReferralModal {
     // Social share buttons
     this.modalEl.querySelector('#btnShareWhatsApp').addEventListener('click', () => {
       const link = input.value;
-      const text = encodeURIComponent(`Join me on SkyRush Aviator! Fly high and win together: ${link}`);
+      const text = encodeURIComponent(`🚀 Fly & Win on SkyRush Crash Game! Sign up with my link and get rewards on your flights: ${link}`);
       window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
     });
 
     this.modalEl.querySelector('#btnShareTelegram').addEventListener('click', () => {
       const link = input.value;
-      const text = encodeURIComponent(`Play SkyRush Aviator Crash Game with me! ${link}`);
+      const text = encodeURIComponent(`🚀 Fly & Win on SkyRush Crash Game! Sign up with my link and get rewards on your flights: ${link}`);
       window.open(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${text}`, '_blank');
     });
 

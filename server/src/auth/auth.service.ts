@@ -2113,6 +2113,14 @@ export class AuthService implements OnModuleInit {
       return { rewarded: false, amount: 0 };
     }
 
+    // Distributed lock to eliminate any concurrent race conditions on simultaneous deposit approvals
+    const lockKey = `lock:referral:ftd:${userId}`;
+    const acquired = await this.redisService.acquireLock(lockKey, 10);
+    if (!acquired) {
+      this.logger.warn(`[Referral FTD] Another FTD process is running for user ${userId}. Skipping duplicate execution.`);
+      return { rewarded: false, amount: 0 };
+    }
+
     try {
       // 1. Fetch user to check if referred
       const user = await this.userRepository.findOne({
@@ -2160,37 +2168,46 @@ export class AuthService implements OnModuleInit {
         return { rewarded: false, amount: 0 };
       }
 
-      // 4. Calculate 5% Commission
+      // 4. Calculate 5% Commission (with maximum safety ceiling of $500 USD per referral)
       const FTD_RATE = 0.05; // 5%
-      const earned = parseFloat((depositUSD * FTD_RATE).toFixed(4));
+      const MAX_FTD_CAP_USD = 500.0;
+      let earned = parseFloat((depositUSD * FTD_RATE).toFixed(4));
+      if (earned > MAX_FTD_CAP_USD) {
+        this.logger.log(`[Referral FTD] Capped 5% bonus from $${earned} to max ceiling $${MAX_FTD_CAP_USD} USD`);
+        earned = MAX_FTD_CAP_USD;
+      }
       if (earned <= 0) return { rewarded: false, amount: 0 };
 
-      // 5. Atomic increment of referrer's balances
-      await this.userRepository.increment({ id: referrerId }, 'referralBalance', earned);
-      await this.userRepository.increment({ id: referrerId }, 'totalReferralEarnings', earned);
+      // 5. ACID Transaction for balance increment, ledger logging, and deposit update
+      await this.userRepository.manager.transaction(async (manager) => {
+        // Increment referrer balances
+        await manager.increment(User, { id: referrerId }, 'referralBalance', earned);
+        await manager.increment(User, { id: referrerId }, 'totalReferralEarnings', earned);
 
-      // 6. Record in ReferralLedger
-      await this.referralLedgerRepository.save({
-        referrerId,
-        referredUserId: userId,
-        betAmount: depositUSD,
-        commissionRate: FTD_RATE,
-        earnedAmount: earned,
-        type: 'FTD_COMMISSION',
-        depositId,
+        // Record immutable audit entry in ReferralLedger
+        await manager.save(ReferralLedger, {
+          referrerId,
+          referredUserId: userId,
+          betAmount: depositUSD,
+          commissionRate: FTD_RATE,
+          earnedAmount: earned,
+          type: 'FTD_COMMISSION',
+          depositId,
+        });
+
+        // Update DepositRequest entity to flag that FTD commission was paid
+        await manager.update(
+          DepositRequest,
+          { id: depositId },
+          {
+            isFirstDeposit: true,
+            referralCommissionPaid: true,
+            referralCommissionAmount: earned,
+          },
+        );
       });
 
-      // 7. Update DepositRequest entity to flag that FTD commission was paid
-      await this.depositRepository.update(
-        { id: depositId },
-        {
-          isFirstDeposit: true,
-          referralCommissionPaid: true,
-          referralCommissionAmount: earned,
-        },
-      );
-
-      // 8. Real-time in-app balance & notification if referrer is connected
+      // 6. Real-time in-app balance & notification if referrer is connected
       this.gameService.notifyUserBalance(
         { id: referrer.id, username: referrer.username },
         Number(referrer.referralBalance) + earned,
@@ -2206,6 +2223,8 @@ export class AuthService implements OnModuleInit {
     } catch (err) {
       this.logger.error(`[Referral FTD] Error processing deposit referral commission for user ${userId}`, err);
       return { rewarded: false, amount: 0 };
+    } finally {
+      await this.redisService.releaseLock(lockKey);
     }
   }
 
