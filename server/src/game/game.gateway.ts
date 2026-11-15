@@ -122,6 +122,26 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection {
     return payload;
   }
 
+  @SubscribeMessage('requestGameState')
+  handleRequestGameState(client: Socket) {
+    const now = Date.now();
+    const rate = (client as any)._reqGameStateRate || { count: 0, resetTime: now + 1000 };
+    if (now > rate.resetTime) {
+      rate.count = 0;
+      rate.resetTime = now + 1000;
+    }
+    rate.count++;
+    (client as any)._reqGameStateRate = rate;
+    if (rate.count > 10) {
+      return { error: 'Request rate limit exceeded' };
+    }
+
+    const roomType = client.rooms?.has('room:marketing') ? GameRoomType.MARKETING : GameRoomType.STANDARD;
+    const state = this.gameService.getGameState(roomType, true);
+    client.emit('gameState', state);
+    return { success: true };
+  }
+
   @SubscribeMessage('subscribeUser')
   async handleSubscribeUser(client: Socket, data: { token?: string }) {
     if (!data?.token || typeof data.token !== 'string') {

@@ -84,6 +84,9 @@ export class SocketClient {
       if (this.authToken) {
         this.socket.emit('subscribeUser', { token: this.authToken });
       }
+
+      // 3. Request immediate authoritative game state sync
+      this.requestGameState();
     });
 
     this.socket.on('disconnect', (reason) => {
@@ -219,6 +222,16 @@ export class SocketClient {
   syncClock() {
     if (this.socket && this.isConnected) {
       this.socket.emit('pingSync', { clientSendTime: Date.now() });
+    }
+  }
+
+  /**
+   * Request immediate authoritative game state from server (used on tab focus / reconnect / desync watchdog)
+   */
+  requestGameState() {
+    if (this.socket && this.isConnected) {
+      this.socket.emit('requestGameState');
+      this.syncClock();
     }
   }
 

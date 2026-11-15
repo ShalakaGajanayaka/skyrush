@@ -379,6 +379,42 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   socketClient.init();
 
+  // Tab Visibility & Inactive Background Recovery Watchdog
+  let lastVisibilitySync = 0;
+  const triggerTabResync = (reason = 'visibility') => {
+    const now = Date.now();
+    if (now - lastVisibilitySync < 400) return; // Throttle duplicate events (visibilitychange + focus)
+    lastVisibilitySync = now;
+
+    socketClient.requestGameState();
+    socketClient.syncClock();
+
+    if (apiClient.getToken()) {
+      apiClient.getProfile().then((profile) => {
+        if (profile && profile.balance !== undefined) {
+          setBalance(profile.balance);
+          syncActiveAndQueuedBets(profile);
+        }
+      }).catch(() => {});
+    }
+  };
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      console.log('👁️ [Visibility] Tab returned to foreground. Requesting authoritative state sync...');
+      triggerTabResync('visibilitychange');
+    }
+  });
+
+  window.addEventListener('focus', () => {
+    triggerTabResync('focus');
+  });
+
+  window.addEventListener('skyrush:desync-detected', (event) => {
+    console.warn('⚠️ [DesyncWatchdog] Desync detected during flight. Requesting fresh server game state...', event.detail);
+    triggerTabResync('desync');
+  });
+
   // 12. Synchronize Authoritative Profile & Balance from Backend
   try {
     const token = apiClient.getToken();

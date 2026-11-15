@@ -16,6 +16,9 @@ export class FlightCanvas {
     this.status = 'waiting';
     this.countdown = 10;
     this.multiplier = 1.00;
+    this.lastAuthoritativeMultiplier = 1.00;
+    this.lastTickTime = Date.now();
+    this._lastDesyncDispatch = 0;
     this.crashPoint = null;
     this.startTime = 0;
     this.flightTime = 0;
@@ -138,6 +141,8 @@ export class FlightCanvas {
     this.status = 'waiting';
     this.countdown = countdown;
     this.multiplier = 1.00;
+    this.lastAuthoritativeMultiplier = 1.00;
+    this.lastTickTime = Date.now();
     this.crashPoint = null;
     this.particles = [];
     this.explosionSparks = [];
@@ -164,6 +169,8 @@ export class FlightCanvas {
     this.status = 'playing';
     this.startTime = startTime || this.getSyncedTime();
     this.multiplier = initialMultiplier;
+    this.lastAuthoritativeMultiplier = initialMultiplier;
+    this.lastTickTime = Date.now();
     this.crashPoint = null;
     this.particles = [];
     this.explosionSparks = [];
@@ -180,6 +187,8 @@ export class FlightCanvas {
     this.status = 'crashed';
     this.crashedAtMultiplier = finalMultiplier || this.multiplier;
     this.multiplier = this.crashedAtMultiplier;
+    this.lastAuthoritativeMultiplier = this.crashedAtMultiplier;
+    this.lastTickTime = Date.now();
     this.flewAwayProgress = 0;
     this.crashTextTimer = 0;
     this.crashVelY = -140;
@@ -233,6 +242,10 @@ export class FlightCanvas {
   }
 
   updateAuthoritativeMultiplier(targetMultiplier) {
+    this.lastTickTime = Date.now();
+    if (typeof targetMultiplier === 'number' && !isNaN(targetMultiplier)) {
+      this.lastAuthoritativeMultiplier = targetMultiplier;
+    }
     if (this.status === 'playing') {
       const diff = targetMultiplier - this.multiplier;
       // Soft damping: if diff is micro (<=0.03x), allow smooth local 60fps exponential loop to run undisturbed.
@@ -271,16 +284,38 @@ export class FlightCanvas {
       const elapsedSec = Math.max(0, (now - this.startTime) / 1000);
       this.flightTime = elapsedSec;
 
-      // Industry standard smooth exponential progression: e^(0.095 * t)
-      // Identical to Game Server (game.service.ts) and Flutter client (game_screen.dart)
-      const targetM = Math.max(1.0, Math.exp(0.095 * elapsedSec));
-      const diff = targetM - this.multiplier;
+      const timeSinceLastTick = Date.now() - (this.lastTickTime || Date.now());
+      // Server hard caps round at 120s and crash multiplier at 10,000x.
+      // If elapsed flight exceeds 120s OR tick silence > 2500ms after initial 3s, client is desynced (e.g. background tab woke up).
+      const isDesynced = elapsedSec > 120.0 || (elapsedSec > 3.0 && timeSinceLastTick > 2500);
 
-      // Frame-rate independent responsive interpolation: adapts smoothly at 60/120fps without lag behind true flight time
-      if (Math.abs(diff) > 0.005) {
-        this.multiplier += diff * Math.min(1.0, dt * 18);
+      if (isDesynced) {
+        // Halt runaway extrapolation. Freeze multiplier at last known authoritative tick to prevent runaway exponential flight
+        if (this.lastAuthoritativeMultiplier) {
+          this.multiplier = Math.min(this.multiplier, Math.max(1.0, this.lastAuthoritativeMultiplier));
+        }
+        const nowMs = Date.now();
+        if (!this._lastDesyncDispatch || nowMs - this._lastDesyncDispatch > 1500) {
+          this._lastDesyncDispatch = nowMs;
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('skyrush:desync-detected', {
+              detail: { elapsedSec, timeSinceLastTick, multiplier: this.multiplier }
+            }));
+          }
+        }
       } else {
-        this.multiplier = targetM;
+        // Industry standard smooth exponential progression: e^(0.095 * t)
+        // Strictly capped at platform ceiling of 10,000.00x
+        const rawTargetM = Math.exp(0.095 * elapsedSec);
+        const targetM = Math.min(10000.00, Math.max(1.0, rawTargetM));
+        const diff = targetM - this.multiplier;
+
+        // Frame-rate independent responsive interpolation: adapts smoothly at 60/120fps without lag behind true flight time
+        if (Math.abs(diff) > 0.005) {
+          this.multiplier += diff * Math.min(1.0, dt * 18);
+        } else {
+          this.multiplier = targetM;
+        }
       }
 
       // Smooth flight ascent towards high sky (climbs to ~65% of screen height)
