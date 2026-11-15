@@ -2009,7 +2009,9 @@ export class AdminService implements OnModuleInit {
     // 1. Total affiliates count (users who have recruited at least 1 person OR have earned referral commissions)
     const totalAffiliates = await this.userRepo
       .createQueryBuilder('u')
-      .where('u.referredById IS NOT NULL OR u.totalReferralEarnings > 0')
+      .where(
+        'EXISTS (SELECT 1 FROM users cu WHERE cu."referredById" = CAST(u.id AS text)) OR u.totalReferralEarnings > 0',
+      )
       .getCount();
 
     // 2. Total recruited pilots count (users registered under a referrer)
